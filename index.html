@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>Hanya Kita Berdua — Video Call Pribadi</title>
+<title>KAWARA CALL — Video Call Pribadi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500;1,9..144,600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -182,8 +182,8 @@
   <!-- ===== LAYAR 1: MASUK ===== -->
   <section id="screen-entry" class="screen active">
     <div class="thread"><span class="node"></span><span class="line"></span><span class="node"></span></div>
-    <h1>Hanya Kita Berdua</h1>
-    <p class="tagline">Ruang video call pribadi. Cuma kalian berdua yang bisa masuk.</p>
+    <h1>Kawara Call</h1>
+    <p class="tagline">Hanya kita berdua — ruang video call pribadi. Cuma kalian berdua yang bisa masuk.</p>
 
     <div class="card">
       <label for="secret">Kata rahasia kalian berdua</label>
@@ -290,6 +290,50 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
 <script>
 (function(){
+  // ============================================================
+  // ICE SERVERS (STUN + TURN)
+  // ------------------------------------------------------------
+  // PENTING: sebelumnya kode ini cuma pakai konfigurasi default
+  // PeerJS, yaitu STUN saja (tanpa TURN). STUN cuma membantu dua
+  // perangkat saling tahu alamat publik masing-masing — itu cukup
+  // kalau NAT kalian "ramah". Tapi begitu salah satu pihak ada di
+  // jaringan seluler/CGNAT, WiFi kantor, atau NAT simetris (sering
+  // terjadi pas dua HP beda lokasi & beda provider), STUN doang
+  // nggak akan pernah berhasil bikin koneksi langsung. Hasilnya:
+  // ICE gagal terus -> kode reconnect kita jalan -> gagal lagi ->
+  // jadi muter terus ("jaringan goyang" -> reconnect -> goyang lagi).
+  //
+  // Solusinya: tambahkan server TURN sebagai jalur relay cadangan.
+  // Di bawah ini pakai TURN gratis dari Open Relay Project (Metered)
+  // untuk keperluan testing. Untuk pemakaian jangka panjang/serius,
+  // sebaiknya pakai TURN sendiri (mis. coturn) atau layanan
+  // berbayar (Twilio, Xirsys, Metered berbayar), karena server
+  // gratis ini punya batas kuota & tidak dijamin selalu tersedia.
+  // ============================================================
+  const ICE_CONFIG = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      {
+        urls: 'turn:openrelay.metered.ca:80',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      }
+    ],
+    // paksa coba relay kalau direct/STUN gagal, bukan cuma sebagai pelengkap
+    iceTransportPolicy: 'all'
+  };
+
   // ============================================================
   // ELEMEN
   // ============================================================
@@ -434,7 +478,7 @@
   function connectAsHost(room, isReconnect){
     const hostId = room + '-1';
     const guestId = room + '-2';
-    const p = new Peer(hostId, { debug: 0 });
+    const p = new Peer(hostId, { debug: 0, config: ICE_CONFIG });
 
     p.on('open', () => {
       peer = p; role = 'host'; hostIdGlobal = hostId;
@@ -465,7 +509,7 @@
   }
 
   function connectAsGuest(room, hostId, guestId, isReconnect){
-    const p = new Peer(guestId, { debug: 0 });
+    const p = new Peer(guestId, { debug: 0, config: ICE_CONFIG });
 
     p.on('open', () => {
       peer = p; role = 'guest'; hostIdGlobal = hostId;
