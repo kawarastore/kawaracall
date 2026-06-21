@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hanya Kita Berdua — Video Call Pribadi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500;1,9..144,600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1625;
+    --dusk:#2b2240;
+    --dusk-2:#382c52;
+    --blush:#f3a989;
+    --glow:#ffd9b8;
+    --mist:#cdc3e0;
+    --paper:#faf6f2;
+    --danger:#e8607a;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    min-height:100svh;
+    background:
+      radial-gradient(120% 90% at 50% -10%, var(--dusk-2) 0%, var(--ink) 55%);
+    color:var(--paper);
+    font-family:'Sora', system-ui, sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    overflow-x:hidden;
+  }
+
+  /* ---------- signature element: the thread ---------- */
+  .thread{
+    display:flex; align-items:center; justify-content:center;
+    width:220px; height:24px; margin:0 auto 28px; position:relative;
+  }
+  .thread .node{
+    width:14px; height:14px; border-radius:50%;
+    background:var(--blush); box-shadow:0 0 18px var(--blush);
+    flex:0 0 auto; z-index:2;
+  }
+  .thread .node:last-child{ background:var(--glow); box-shadow:0 0 18px var(--glow); }
+  .thread .line{
+    flex:1; height:2px; margin:0 -1px;
+    background-image:linear-gradient(90deg, var(--mist) 50%, transparent 50%);
+    background-size:10px 2px;
+    position:relative; overflow:hidden;
+  }
+  .thread .line::after{
+    content:''; position:absolute; top:-3px; left:-6%;
+    width:8px; height:8px; border-radius:50%;
+    background:var(--paper); box-shadow:0 0 10px var(--paper);
+    animation:travel 3.2s ease-in-out infinite;
+  }
+  @keyframes travel{ 0%{left:-6%;} 50%{left:94%;} 100%{left:-6%;} }
+  .thread.pulsing .node{ animation:pulse 1.6s ease-in-out infinite; }
+  .thread.pulsing .node:last-child{ animation-delay:.3s; }
+  @keyframes pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.35); } }
+
+  /* ---------- screens ---------- */
+  .screen{ display:none; width:100%; max-width:440px; text-align:center; }
+  .screen.active{ display:block; animation:fadeIn .5s ease both; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  h1{
+    font-family:'Fraunces', serif; font-style:italic; font-weight:500;
+    font-size:clamp(28px,6vw,38px); margin:0 0 8px; letter-spacing:.2px;
+  }
+  h2{ font-family:'Fraunces', serif; font-style:italic; font-weight:500; font-size:24px; margin:0 0 6px; }
+  .tagline{ color:var(--mist); margin:0 0 28px; font-size:15px; }
+
+  .card{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:24px; padding:28px 24px;
+    backdrop-filter:blur(6px);
+  }
+  .card label{ display:block; text-align:left; font-size:13px; color:var(--mist); margin-bottom:8px; }
+  .card input{
+    width:100%; padding:14px 16px; border-radius:14px; border:1px solid rgba(255,255,255,.12);
+    background:var(--ink); color:var(--paper); font-family:'Sora'; font-size:16px; outline:none;
+  }
+  .card input:focus{ border-color:var(--blush); box-shadow:0 0 0 3px rgba(243,169,137,.2); }
+  .hint{ font-size:12.5px; color:var(--mist); margin:12px 0 0; line-height:1.5; }
+
+  button{ font-family:'Sora'; cursor:pointer; border:none; }
+  #btn-join{
+    width:100%; margin-top:16px; padding:14px 16px; border-radius:14px;
+    background:linear-gradient(135deg, var(--blush), var(--glow));
+    color:var(--ink); font-weight:700; font-size:15px;
+    transition:transform .15s ease, opacity .15s ease;
+  }
+  #btn-join:active{ transform:scale(.98); }
+  #btn-join:disabled{ opacity:.6; cursor:default; }
+
+  .ghost{
+    margin-top:20px; background:transparent; color:var(--mist);
+    border:1px solid rgba(255,255,255,.15) !important; padding:10px 18px; border-radius:12px; font-size:13px;
+  }
+
+  .error{ color:var(--danger); font-size:13.5px; margin:16px 0 0; }
+  .footnote{ color:rgba(205,195,224,.6); font-size:11.5px; margin-top:26px; line-height:1.6; }
+
+  #waiting-room{ color:var(--glow); }
+
+  video#local-preview-waiting{
+    width:160px; aspect-ratio:1/1; object-fit:cover; border-radius:50%;
+    margin:22px auto 6px; display:block; border:2px solid var(--blush);
+    transform:scaleX(-1);
+  }
+
+  /* ---------- call screen ---------- */
+  #screen-call{ max-width:none; width:100%; height:100svh; position:fixed; inset:0; padding:0; }
+  #screen-call.active{ display:flex; align-items:center; justify-content:center; }
+  #remote-video{
+    width:100%; height:100%; object-fit:cover; background:var(--dusk); display:block;
+  }
+  #local-video{
+    position:fixed; width:108px; aspect-ratio:3/4; object-fit:cover;
+    bottom:104px; right:18px; border-radius:18px; border:2px solid rgba(255,255,255,.5);
+    box-shadow:0 8px 24px rgba(0,0,0,.4); transform:scaleX(-1); z-index:5;
+  }
+  .status-pill{
+    position:fixed; top:18px; left:50%; transform:translateX(-50%);
+    background:rgba(20,16,30,.55); backdrop-filter:blur(6px);
+    color:var(--paper); padding:8px 16px; border-radius:999px; font-size:13px;
+    display:flex; align-items:center; gap:8px; z-index:5;
+  }
+  .status-pill .dot{ width:7px; height:7px; border-radius:50%; background:#7cf2a4; box-shadow:0 0 8px #7cf2a4; }
+
+  .controls{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    display:flex; gap:14px; z-index:5;
+    background:rgba(20,16,30,.55); backdrop-filter:blur(8px);
+    padding:12px; border-radius:999px;
+  }
+  .control{
+    width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,.12);
+    color:var(--paper); display:flex; align-items:center; justify-content:center;
+    transition:background .15s ease;
+  }
+  .control svg{ width:22px; height:22px; }
+  .control.off{ background:var(--paper); color:var(--ink); }
+  .control.end{ background:var(--danger); color:#fff; width:60px; }
+  .control:active{ transform:scale(.94); }
+
+  @media (prefers-reduced-motion: reduce){
+    .thread .line::after, .thread.pulsing .node{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===== LAYAR 1: MASUK ===== -->
+  <section id="screen-entry" class="screen active">
+    <div class="thread"><span class="node"></span><span class="line"></span><span class="node"></span></div>
+    <h1>Hanya Kita Berdua</h1>
+    <p class="tagline">Ruang video call pribadi. Cuma kalian berdua yang bisa masuk.</p>
+
+    <div class="card">
+      <label for="secret">Kata rahasia kalian berdua</label>
+      <input id="secret" placeholder="misal: senja ungu 23" autocomplete="off" maxlength="60">
+      <button id="btn-join">Mulai / Gabung</button>
+      <p class="hint">Berdua ketik kata yang <em>persis sama</em>. Yang buka duluan akan menunggu, yang kedua otomatis langsung tersambung.</p>
+    </div>
+
+    <p id="entry-error" class="error" hidden></p>
+    <p class="footnote">Video & suara mengalir langsung antar browser kalian (peer-to-peer) — tidak direkam atau disimpan di server mana pun. Tetap pilih kata rahasia yang unik, ya.</p>
+  </section>
+
+  <!-- ===== LAYAR 2: MENUNGGU ===== -->
+  <section id="screen-waiting" class="screen">
+    <div class="thread pulsing"><span class="node"></span><span class="line"></span><span class="node"></span></div>
+    <h2>Menunggu dia gabung...</h2>
+    <p class="hint">Ruang: <strong id="waiting-room"></strong></p>
+    <video id="local-preview-waiting" autoplay muted playsinline></video>
+    <br>
+    <button id="btn-cancel-wait" class="ghost">Batalkan</button>
+  </section>
+
+  <!-- ===== LAYAR 3: PANGGILAN ===== -->
+  <section id="screen-call" class="screen">
+    <video id="remote-video" autoplay playsinline></video>
+    <video id="local-video" autoplay muted playsinline></video>
+    <div class="status-pill"><span class="dot"></span> Tersambung</div>
+    <div class="controls">
+      <button id="btn-mic" class="control" aria-label="Mikrofon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="2" width="6" height="11" rx="3"></rect>
+          <path d="M5 11a7 7 0 0 0 14 0"></path>
+          <line x1="12" y1="18" x2="12" y2="22"></line>
+          <line x1="8" y1="22" x2="16" y2="22"></line>
+        </svg>
+      </button>
+      <button id="btn-cam" class="control" aria-label="Kamera">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="6" width="14" height="12" rx="2"></rect>
+          <path d="M16 10.5 22 7v10l-6-3.5"></path>
+        </svg>
+      </button>
+      <button id="btn-end" class="control end" aria-label="Akhiri panggilan">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 9c-2.5 0-4.8.6-6.8 1.7a1 1 0 0 0-.4 1.4l1.2 2a1 1 0 0 0 1.3.4c1-.5 2.1-.9 3.2-1.1v-2.1c0-.6.4-1 .9-1.1.4-.1.9-.1 1.3-.1s.9 0 1.3.1c.5.1.9.5.9 1.1v2.1c1.1.2 2.2.6 3.2 1.1a1 1 0 0 0 1.3-.4l1.2-2a1 1 0 0 0-.4-1.4C16.8 9.6 14.5 9 12 9z"/>
+        </svg>
+      </button>
+    </div>
+  </section>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
+<script>
+(function(){
+  // ---------- elemen ----------
+  const screens = {
+    entry: document.getElementById('screen-entry'),
+    waiting: document.getElementById('screen-waiting'),
+    call: document.getElementById('screen-call'),
+  };
+  const secretInput = document.getElementById('secret');
+  const btnJoin = document.getElementById('btn-join');
+  const entryError = document.getElementById('entry-error');
+  const waitingRoomLabel = document.getElementById('waiting-room');
+  const localPreviewWaiting = document.getElementById('local-preview-waiting');
+  const btnCancelWait = document.getElementById('btn-cancel-wait');
+  const remoteVideo = document.getElementById('remote-video');
+  const localVideo = document.getElementById('local-video');
+  const btnMic = document.getElementById('btn-mic');
+  const btnCam = document.getElementById('btn-cam');
+  const btnEnd = document.getElementById('btn-end');
+
+  let peer = null;
+  let localStream = null;
+  let currentCall = null;
+
+  function showScreen(name){
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+  }
+
+  function showEntryError(msg){
+    entryError.textContent = msg;
+    entryError.hidden = false;
+  }
+  function clearEntryError(){
+    entryError.hidden = true;
+    entryError.textContent = '';
+  }
+
+  function sanitizeRoom(raw){
+    return raw
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9\-_]/g, '')
+      .slice(0, 60);
+  }
+
+  // ---------- alur masuk / gabung ----------
+  btnJoin.addEventListener('click', async () => {
+    clearEntryError();
+    const room = sanitizeRoom(secretInput.value);
+    if (!room){
+      showEntryError('Kata rahasia nggak boleh kosong ya.');
+      return;
+    }
+
+    btnJoin.disabled = true;
+    btnJoin.textContent = 'Menyiapkan kamera...';
+
+    try{
+      localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+    }catch(err){
+      btnJoin.disabled = false;
+      btnJoin.textContent = 'Mulai / Gabung';
+      showEntryError('Nggak bisa akses kamera/mic. Pastikan izin browser sudah diizinkan, dan situs ini dibuka lewat HTTPS.');
+      return;
+    }
+
+    localVideo.srcObject = localStream;
+    localPreviewWaiting.srcObject = localStream;
+    btnJoin.textContent = 'Menyambungkan...';
+
+    connectAsHost(room);
+  });
+
+  function connectAsHost(room){
+    const hostId = room + '-1';
+    const guestId = room + '-2';
+
+    const p = new Peer(hostId, { debug: 0 });
+
+    p.on('open', () => {
+      peer = p;
+      waitingRoomLabel.textContent = secretInput.value.trim();
+      showScreen('waiting');
+      resetJoinButton();
+
+      peer.on('call', incomingCall => {
+        incomingCall.answer(localStream);
+        bindCallEvents(incomingCall);
+      });
+    });
+
+    p.on('error', err => {
+      if (err.type === 'unavailable-id'){
+        p.destroy();
+        connectAsGuest(room, hostId, guestId);
+      } else {
+        resetJoinButton();
+        showEntryError('Gagal terhubung (' + err.type + '). Coba lagi sebentar.');
+      }
+    });
+  }
+
+  function connectAsGuest(room, hostId, guestId){
+    const p = new Peer(guestId, { debug: 0 });
+
+    p.on('open', () => {
+      peer = p;
+      waitingRoomLabel.textContent = secretInput.value.trim();
+      showScreen('waiting');
+      resetJoinButton();
+
+      const call = peer.call(hostId, localStream);
+      bindCallEvents(call);
+    });
+
+    p.on('error', err => {
+      resetJoinButton();
+      showEntryError('Gagal terhubung (' + err.type + '). Coba lagi sebentar.');
+    });
+  }
+
+  function bindCallEvents(call){
+    currentCall = call;
+    call.on('stream', remoteStream => {
+      remoteVideo.srcObject = remoteStream;
+      remoteVideo.play().catch(()=>{});
+      showScreen('call');
+    });
+    call.on('close', () => endCall('Pasangan kamu mengakhiri panggilan.'));
+    call.on('error', () => endCall('Koneksi terputus.'));
+  }
+
+  function resetJoinButton(){
+    btnJoin.disabled = false;
+    btnJoin.textContent = 'Mulai / Gabung';
+  }
+
+  // ---------- batalkan saat menunggu ----------
+  btnCancelWait.addEventListener('click', () => {
+    cleanupConnection();
+    showScreen('entry');
+  });
+
+  // ---------- kontrol saat panggilan ----------
+  btnMic.addEventListener('click', () => {
+    const track = localStream.getAudioTracks()[0];
+    if (!track) return;
+    track.enabled = !track.enabled;
+    btnMic.classList.toggle('off', !track.enabled);
+  });
+
+  btnCam.addEventListener('click', () => {
+    const track = localStream.getVideoTracks()[0];
+    if (!track) return;
+    track.enabled = !track.enabled;
+    btnCam.classList.toggle('off', !track.enabled);
+  });
+
+  btnEnd.addEventListener('click', () => endCall());
+
+  function endCall(message){
+    cleanupConnection();
+    showScreen('entry');
+    if (message){
+      showEntryError(message);
+    }
+  }
+
+  function cleanupConnection(){
+    if (currentCall){
+      try{ currentCall.close(); }catch(e){}
+      currentCall = null;
+    }
+    if (peer){
+      try{ peer.destroy(); }catch(e){}
+      peer = null;
+    }
+    if (localStream){
+      localStream.getTracks().forEach(t => t.stop());
+      localStream = null;
+    }
+    remoteVideo.srcObject = null;
+    localVideo.srcObject = null;
+    localPreviewWaiting.srcObject = null;
+    btnMic.classList.remove('off');
+    btnCam.classList.remove('off');
+  }
+
+  window.addEventListener('beforeunload', () => {
+    if (peer) { try{ peer.destroy(); }catch(e){} }
+  });
+})();
+</script>
+</body>
+</html>
