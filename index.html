@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Hanya Kita Berdua — Video Call Pribadi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,140 +17,161 @@
     --mist:#cdc3e0;
     --paper:#faf6f2;
     --danger:#e8607a;
+    --warn:#ffd166;
+    --good:#7cf2a4;
   }
-  *{ box-sizing:border-box; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body{ height:100%; }
   body{
     margin:0;
     min-height:100svh;
-    background:
-      radial-gradient(120% 90% at 50% -10%, var(--dusk-2) 0%, var(--ink) 55%);
+    background:radial-gradient(120% 90% at 50% -10%, var(--dusk-2) 0%, var(--ink) 55%);
     color:var(--paper);
     font-family:'Sora', system-ui, sans-serif;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    display:flex; align-items:center; justify-content:center;
     padding:24px;
     overflow-x:hidden;
+    /* performa: hindari overscroll bounce berat di iOS saat layar penuh video */
+    overscroll-behavior:none;
   }
 
-  /* ---------- signature element: the thread ---------- */
-  .thread{
-    display:flex; align-items:center; justify-content:center;
-    width:220px; height:24px; margin:0 auto 28px; position:relative;
-  }
-  .thread .node{
-    width:14px; height:14px; border-radius:50%;
-    background:var(--blush); box-shadow:0 0 18px var(--blush);
-    flex:0 0 auto; z-index:2;
-  }
-  .thread .node:last-child{ background:var(--glow); box-shadow:0 0 18px var(--glow); }
-  .thread .line{
-    flex:1; height:2px; margin:0 -1px;
-    background-image:linear-gradient(90deg, var(--mist) 50%, transparent 50%);
-    background-size:10px 2px;
-    position:relative; overflow:hidden;
-  }
+  /* ---------- signature element: the thread (pakai transform, bukan `left`, biar ringan di iPhone) ---------- */
+  .thread{ display:flex; align-items:center; justify-content:center; width:220px; height:24px; margin:0 auto 28px; position:relative; }
+  .thread .node{ width:14px; height:14px; border-radius:50%; background:var(--blush); box-shadow:0 0 14px var(--blush); flex:0 0 auto; z-index:2; will-change:transform; }
+  .thread .node:last-child{ background:var(--glow); box-shadow:0 0 14px var(--glow); }
+  .thread .line{ flex:1; height:2px; margin:0 -1px; background-image:linear-gradient(90deg, var(--mist) 50%, transparent 50%); background-size:10px 2px; position:relative; overflow:hidden; }
   .thread .line::after{
-    content:''; position:absolute; top:-3px; left:-6%;
-    width:8px; height:8px; border-radius:50%;
-    background:var(--paper); box-shadow:0 0 10px var(--paper);
-    animation:travel 3.2s ease-in-out infinite;
+    content:''; position:absolute; top:-3px; left:0; width:8px; height:8px; border-radius:50%;
+    background:var(--paper); box-shadow:0 0 8px var(--paper);
+    animation:travel 3.2s ease-in-out infinite; will-change:transform, opacity;
   }
-  @keyframes travel{ 0%{left:-6%;} 50%{left:94%;} 100%{left:-6%;} }
+  @keyframes travel{
+    0%{ transform:translateX(0); opacity:0; }
+    10%{ opacity:1; }
+    90%{ opacity:1; }
+    100%{ transform:translateX(calc(100% - 8px)); opacity:0; }
+  }
   .thread.pulsing .node{ animation:pulse 1.6s ease-in-out infinite; }
   .thread.pulsing .node:last-child{ animation-delay:.3s; }
-  @keyframes pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.35); } }
+  @keyframes pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.3); } }
 
   /* ---------- screens ---------- */
   .screen{ display:none; width:100%; max-width:440px; text-align:center; }
-  .screen.active{ display:block; animation:fadeIn .5s ease both; }
+  .screen.active{ display:block; animation:fadeIn .4s ease both; }
   @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
 
-  h1{
-    font-family:'Fraunces', serif; font-style:italic; font-weight:500;
-    font-size:clamp(28px,6vw,38px); margin:0 0 8px; letter-spacing:.2px;
-  }
+  h1{ font-family:'Fraunces', serif; font-style:italic; font-weight:500; font-size:clamp(28px,6vw,38px); margin:0 0 8px; letter-spacing:.2px; }
   h2{ font-family:'Fraunces', serif; font-style:italic; font-weight:500; font-size:24px; margin:0 0 6px; }
   .tagline{ color:var(--mist); margin:0 0 28px; font-size:15px; }
 
-  .card{
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:24px; padding:28px 24px;
-    backdrop-filter:blur(6px);
-  }
+  .card{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:24px; padding:28px 24px; backdrop-filter:blur(6px); }
   .card label{ display:block; text-align:left; font-size:13px; color:var(--mist); margin-bottom:8px; }
-  .card input{
-    width:100%; padding:14px 16px; border-radius:14px; border:1px solid rgba(255,255,255,.12);
-    background:var(--ink); color:var(--paper); font-family:'Sora'; font-size:16px; outline:none;
-  }
+  .card input{ width:100%; padding:14px 16px; border-radius:14px; border:1px solid rgba(255,255,255,.12); background:var(--ink); color:var(--paper); font-family:'Sora'; font-size:16px; outline:none; }
   .card input:focus{ border-color:var(--blush); box-shadow:0 0 0 3px rgba(243,169,137,.2); }
   .hint{ font-size:12.5px; color:var(--mist); margin:12px 0 0; line-height:1.5; }
 
   button{ font-family:'Sora'; cursor:pointer; border:none; }
-  #btn-join{
-    width:100%; margin-top:16px; padding:14px 16px; border-radius:14px;
-    background:linear-gradient(135deg, var(--blush), var(--glow));
-    color:var(--ink); font-weight:700; font-size:15px;
-    transition:transform .15s ease, opacity .15s ease;
-  }
+  #btn-join{ width:100%; margin-top:16px; padding:14px 16px; border-radius:14px; background:linear-gradient(135deg, var(--blush), var(--glow)); color:var(--ink); font-weight:700; font-size:15px; transition:transform .15s ease, opacity .15s ease; }
   #btn-join:active{ transform:scale(.98); }
   #btn-join:disabled{ opacity:.6; cursor:default; }
 
-  .ghost{
-    margin-top:20px; background:transparent; color:var(--mist);
-    border:1px solid rgba(255,255,255,.15) !important; padding:10px 18px; border-radius:12px; font-size:13px;
-  }
+  .quality-row{ display:flex; gap:8px; margin-top:14px; }
+  .quality-opt{ flex:1; padding:9px 6px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1) !important; color:var(--mist); font-size:12.5px; font-weight:600; }
+  .quality-opt.active{ background:rgba(243,169,137,.18); border-color:var(--blush) !important; color:var(--glow); }
+
+  .ghost{ margin-top:20px; background:transparent; color:var(--mist); border:1px solid rgba(255,255,255,.15) !important; padding:10px 18px; border-radius:12px; font-size:13px; }
 
   .error{ color:var(--danger); font-size:13.5px; margin:16px 0 0; }
   .footnote{ color:rgba(205,195,224,.6); font-size:11.5px; margin-top:26px; line-height:1.6; }
 
   #waiting-room{ color:var(--glow); }
-
-  video#local-preview-waiting{
-    width:160px; aspect-ratio:1/1; object-fit:cover; border-radius:50%;
-    margin:22px auto 6px; display:block; border:2px solid var(--blush);
-    transform:scaleX(-1);
-  }
+  video#local-preview-waiting{ width:160px; aspect-ratio:1/1; object-fit:cover; border-radius:50%; margin:22px auto 6px; display:block; border:2px solid var(--blush); transform:scaleX(-1); background:var(--dusk); }
 
   /* ---------- call screen ---------- */
   #screen-call{ max-width:none; width:100%; height:100svh; position:fixed; inset:0; padding:0; }
   #screen-call.active{ display:flex; align-items:center; justify-content:center; }
-  #remote-video{
-    width:100%; height:100%; object-fit:cover; background:var(--dusk); display:block;
-  }
+  #remote-video{ width:100%; height:100%; object-fit:cover; background:var(--dusk); display:block; }
   #local-video{
-    position:fixed; width:108px; aspect-ratio:3/4; object-fit:cover;
-    bottom:104px; right:18px; border-radius:18px; border:2px solid rgba(255,255,255,.5);
-    box-shadow:0 8px 24px rgba(0,0,0,.4); transform:scaleX(-1); z-index:5;
+    position:fixed; width:104px; aspect-ratio:3/4; object-fit:cover;
+    bottom:calc(100px + env(safe-area-inset-bottom)); right:16px; border-radius:18px;
+    border:2px solid rgba(255,255,255,.5); box-shadow:0 8px 20px rgba(0,0,0,.4);
+    transform:scaleX(-1); z-index:5; background:var(--dusk);
   }
+
   .status-pill{
-    position:fixed; top:18px; left:50%; transform:translateX(-50%);
-    background:rgba(20,16,30,.55); backdrop-filter:blur(6px);
-    color:var(--paper); padding:8px 16px; border-radius:999px; font-size:13px;
-    display:flex; align-items:center; gap:8px; z-index:5;
+    position:fixed; top:calc(16px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+    background:rgba(20,16,30,.55); backdrop-filter:blur(6px); color:var(--paper);
+    padding:8px 16px; border-radius:999px; font-size:12.5px;
+    display:flex; align-items:center; gap:8px; z-index:6; white-space:nowrap;
   }
-  .status-pill .dot{ width:7px; height:7px; border-radius:50%; background:#7cf2a4; box-shadow:0 0 8px #7cf2a4; }
+  .status-pill .dot{ width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good); flex:0 0 auto; transition:background .25s ease; }
+
+  .chat-toggle{
+    position:fixed; top:calc(16px + env(safe-area-inset-top)); right:16px; z-index:6;
+    width:40px; height:40px; border-radius:50%; background:rgba(20,16,30,.55); backdrop-filter:blur(6px);
+    color:var(--paper); display:flex; align-items:center; justify-content:center;
+  }
+  .chat-toggle svg{ width:19px; height:19px; }
+  .chat-badge{
+    position:absolute; top:-2px; right:-2px; width:9px; height:9px; border-radius:50%;
+    background:var(--danger); display:none;
+  }
+  .chat-badge.show{ display:block; }
 
   .controls{
-    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-    display:flex; gap:14px; z-index:5;
-    background:rgba(20,16,30,.55); backdrop-filter:blur(8px);
-    padding:12px; border-radius:999px;
+    position:fixed; bottom:calc(20px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+    display:flex; gap:8px; z-index:5; background:rgba(20,16,30,.55); backdrop-filter:blur(8px);
+    padding:10px; border-radius:999px; flex-wrap:nowrap; max-width:calc(100vw - 20px);
   }
-  .control{
-    width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,.12);
-    color:var(--paper); display:flex; align-items:center; justify-content:center;
-    transition:background .15s ease;
-  }
-  .control svg{ width:22px; height:22px; }
+  .control{ width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,.12); color:var(--paper); display:flex; align-items:center; justify-content:center; flex:0 0 auto; transition:background .15s ease; }
+  .control svg{ width:19px; height:19px; }
   .control.off{ background:var(--paper); color:var(--ink); }
-  .control.end{ background:var(--danger); color:#fff; width:60px; }
-  .control:active{ transform:scale(.94); }
+  .control.end{ background:var(--danger); color:#fff; width:54px; }
+  .control:active{ transform:scale(.92); }
+  .control:disabled{ opacity:.5; }
+
+  .qbar{ opacity:.35; transition:opacity .15s ease; }
+  .qbar.active{ opacity:1; }
+
+  /* ---------- tap-to-unmute overlay (iOS autoplay policy) ---------- */
+  .tap-overlay{
+    position:fixed; inset:0; background:rgba(10,8,16,.55); z-index:8;
+    display:none; align-items:center; justify-content:center; text-align:center; color:var(--paper);
+    font-size:15px; padding:24px;
+  }
+  .tap-overlay.show{ display:flex; }
+
+  /* ---------- chat panel ---------- */
+  .chat-panel{
+    position:fixed; left:0; right:0; bottom:0; height:62vh; max-height:520px;
+    background:var(--dusk); border-radius:22px 22px 0 0; z-index:9;
+    transform:translateY(100%); transition:transform .25s ease;
+    display:flex; flex-direction:column; box-shadow:0 -10px 30px rgba(0,0,0,.4);
+  }
+  .chat-panel.open{ transform:translateY(0); }
+  .chat-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid rgba(255,255,255,.08); flex:0 0 auto; }
+  .chat-head strong{ font-size:14px; font-weight:600; }
+  .chat-close{ background:transparent; color:var(--mist); font-size:20px; line-height:1; padding:4px 8px; }
+  .chat-messages{ flex:1 1 auto; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:8px; -webkit-overflow-scrolling:touch; }
+  .chat-msg{ max-width:75%; padding:9px 13px; border-radius:14px; font-size:13.5px; line-height:1.4; word-wrap:break-word; }
+  .chat-msg.me{ align-self:flex-end; background:linear-gradient(135deg, var(--blush), var(--glow)); color:var(--ink); border-bottom-right-radius:4px; }
+  .chat-msg.them{ align-self:flex-start; background:rgba(255,255,255,.08); color:var(--paper); border-bottom-left-radius:4px; }
+  .chat-input-row{ display:flex; gap:8px; padding:12px; padding-bottom:calc(12px + env(safe-area-inset-bottom)); flex:0 0 auto; border-top:1px solid rgba(255,255,255,.08); }
+  .chat-input-row input{ flex:1; background:var(--ink); border:1px solid rgba(255,255,255,.12); color:var(--paper); border-radius:14px; padding:11px 14px; font-family:'Sora'; font-size:14px; outline:none; }
+  .chat-input-row input:focus{ border-color:var(--blush); }
+  .chat-send{ width:44px; height:44px; border-radius:50%; background:var(--blush); color:var(--ink); display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .chat-send svg{ width:18px; height:18px; }
 
   @media (prefers-reduced-motion: reduce){
     .thread .line::after, .thread.pulsing .node{ animation:none; }
+    .screen.active{ animation:none; }
+  }
+
+  /* layar sempit: kurangi blur supaya lebih ringan di hp lawas */
+  @media (max-width:380px){
+    .status-pill, .controls, .chat-toggle{ backdrop-filter:blur(4px); }
+    .control{ width:42px; height:42px; }
+    .control.end{ width:50px; }
   }
 </style>
 </head>
@@ -167,6 +188,13 @@
     <div class="card">
       <label for="secret">Kata rahasia kalian berdua</label>
       <input id="secret" placeholder="misal: senja ungu 23" autocomplete="off" maxlength="60">
+
+      <div class="quality-row" id="quality-row">
+        <button type="button" class="quality-opt" data-q="hemat">Hemat Data</button>
+        <button type="button" class="quality-opt" data-q="normal">Normal</button>
+        <button type="button" class="quality-opt" data-q="hd">HD</button>
+      </div>
+
       <button id="btn-join">Mulai / Gabung</button>
       <p class="hint">Berdua ketik kata yang <em>persis sama</em>. Yang buka duluan akan menunggu, yang kedua otomatis langsung tersambung.</p>
     </div>
@@ -189,7 +217,18 @@
   <section id="screen-call" class="screen">
     <video id="remote-video" autoplay playsinline></video>
     <video id="local-video" autoplay muted playsinline></video>
-    <div class="status-pill"><span class="dot"></span> Tersambung</div>
+
+    <div class="status-pill"><span class="dot" id="status-dot"></span><span id="status-text">Tersambung</span></div>
+
+    <button class="chat-toggle" id="btn-chat-toggle" aria-label="Chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 11.5a8.4 8.4 0 0 1-8.8 8.4 9 9 0 0 1-3.3-.6L3 21l1.7-5a8.4 8.4 0 0 1 8-12 8.4 8.4 0 0 1 8.3 8.5z"></path>
+      </svg>
+      <span class="chat-badge" id="chat-badge"></span>
+    </button>
+
+    <div class="tap-overlay" id="tap-overlay">Ketuk layar untuk mengaktifkan suara</div>
+
     <div class="controls">
       <button id="btn-mic" class="control" aria-label="Mikrofon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -205,11 +244,44 @@
           <path d="M16 10.5 22 7v10l-6-3.5"></path>
         </svg>
       </button>
+      <button id="btn-switch-cam" class="control" aria-label="Ganti kamera">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 2l4 4-4 4"></path>
+          <path d="M21 6H8a4 4 0 0 0-4 4v1"></path>
+          <path d="M7 22l-4-4 4-4"></path>
+          <path d="M3 18h13a4 4 0 0 0 4-4v-1"></path>
+        </svg>
+      </button>
+      <button id="btn-quality" class="control" aria-label="Kualitas video">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <rect class="qbar qbar-1" x="3" y="14" width="4" height="7" rx="1"></rect>
+          <rect class="qbar qbar-2" x="10" y="9" width="4" height="12" rx="1"></rect>
+          <rect class="qbar qbar-3" x="17" y="4" width="4" height="17" rx="1"></rect>
+        </svg>
+      </button>
       <button id="btn-end" class="control end" aria-label="Akhiri panggilan">
         <svg viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 9c-2.5 0-4.8.6-6.8 1.7a1 1 0 0 0-.4 1.4l1.2 2a1 1 0 0 0 1.3.4c1-.5 2.1-.9 3.2-1.1v-2.1c0-.6.4-1 .9-1.1.4-.1.9-.1 1.3-.1s.9 0 1.3.1c.5.1.9.5.9 1.1v2.1c1.1.2 2.2.6 3.2 1.1a1 1 0 0 0 1.3-.4l1.2-2a1 1 0 0 0-.4-1.4C16.8 9.6 14.5 9 12 9z"/>
         </svg>
       </button>
+    </div>
+
+    <!-- panel chat teks -->
+    <div class="chat-panel" id="chat-panel">
+      <div class="chat-head">
+        <strong>Chat</strong>
+        <button class="chat-close" id="btn-chat-close" aria-label="Tutup chat">×</button>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input id="chat-input" type="text" placeholder="Tulis pesan..." maxlength="500" autocomplete="off">
+        <button class="chat-send" id="btn-chat-send" aria-label="Kirim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
     </div>
   </section>
 
@@ -218,7 +290,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
 <script>
 (function(){
-  // ---------- elemen ----------
+  // ============================================================
+  // ELEMEN
+  // ============================================================
   const screens = {
     entry: document.getElementById('screen-entry'),
     waiting: document.getElementById('screen-waiting'),
@@ -234,52 +308,116 @@
   const localVideo = document.getElementById('local-video');
   const btnMic = document.getElementById('btn-mic');
   const btnCam = document.getElementById('btn-cam');
+  const btnSwitchCam = document.getElementById('btn-switch-cam');
+  const btnQuality = document.getElementById('btn-quality');
   const btnEnd = document.getElementById('btn-end');
+  const statusDot = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
+  const tapOverlay = document.getElementById('tap-overlay');
+  const qualityRow = document.getElementById('quality-row');
 
+  const btnChatToggle = document.getElementById('btn-chat-toggle');
+  const chatBadge = document.getElementById('chat-badge');
+  const chatPanel = document.getElementById('chat-panel');
+  const btnChatClose = document.getElementById('btn-chat-close');
+  const chatMessages = document.getElementById('chat-messages');
+  const chatInput = document.getElementById('chat-input');
+  const btnChatSend = document.getElementById('btn-chat-send');
+
+  // ============================================================
+  // STATE
+  // ============================================================
   let peer = null;
   let localStream = null;
   let currentCall = null;
+  let dataConn = null;
+  let role = null;            // 'host' | 'guest'
+  let hostIdGlobal = null;
+  let currentRoom = null;     // room id yang sudah disanitasi
+  let currentFacingMode = 'user';
+  let reconnectAttempts = 0;
+  let reconnectTimer = null;
+  let statsInterval = null;
+  let chatUnread = 0;
 
+  const MAX_RECONNECT = 3;
+
+  // deteksi hp/touch supaya default kualitas lebih ringan (hemat baterai & CPU)
+  function isMobileDevice(){
+    const ua = navigator.userAgent || '';
+    const touchMac = /MacIntel/.test(navigator.platform) && navigator.maxTouchPoints > 2;
+    return /iPhone|iPad|iPod|Android/i.test(ua) || touchMac || (window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
+  }
+  let currentQuality = isMobileDevice() ? 'normal' : 'hd';
+
+  const QUALITY_PRESETS = {
+    hemat:  { width:{ideal:480},  height:{ideal:360}, frameRate:{ideal:20,max:24} },
+    normal: { width:{ideal:640},  height:{ideal:480}, frameRate:{ideal:24,max:30} },
+    hd:     { width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:30,max:30} },
+  };
+  const QUALITY_BITRATE = { hemat:250000, normal:700000, hd:1800000 };
+  const QUALITY_LABEL = { hemat:'Hemat Data', normal:'Normal', hd:'HD' };
+
+  // ============================================================
+  // UI HELPERS
+  // ============================================================
   function showScreen(name){
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[name].classList.add('active');
   }
-
-  function showEntryError(msg){
-    entryError.textContent = msg;
-    entryError.hidden = false;
-  }
-  function clearEntryError(){
-    entryError.hidden = true;
-    entryError.textContent = '';
-  }
+  function showEntryError(msg){ entryError.textContent = msg; entryError.hidden = false; }
+  function clearEntryError(){ entryError.hidden = true; entryError.textContent = ''; }
+  function resetJoinButton(){ btnJoin.disabled = false; btnJoin.textContent = 'Mulai / Gabung'; }
 
   function sanitizeRoom(raw){
-    return raw
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9\-_]/g, '')
-      .slice(0, 60);
+    return raw.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-_]/g, '').slice(0, 60);
   }
 
-  // ---------- alur masuk / gabung ----------
+  function setStatus(text, dotColor){
+    statusText.textContent = text;
+    if (dotColor) statusDot.style.background = dotColor;
+  }
+
+  function setQualityIconState(q){
+    document.querySelectorAll('.qbar').forEach((el, i) => {
+      const map = { hemat:1, normal:2, hd:3 };
+      el.classList.toggle('active', (i+1) <= map[q]);
+    });
+    btnQuality.setAttribute('aria-label', 'Kualitas video: ' + QUALITY_LABEL[q]);
+  }
+  function setQualityRowUI(q){
+    qualityRow.querySelectorAll('.quality-opt').forEach(b => b.classList.toggle('active', b.dataset.q === q));
+  }
+  setQualityRowUI(currentQuality);
+  setQualityIconState(currentQuality);
+
+  qualityRow.querySelectorAll('.quality-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentQuality = btn.dataset.q;
+      setQualityRowUI(currentQuality);
+      setQualityIconState(currentQuality);
+    });
+  });
+
+  // ============================================================
+  // MASUK / GABUNG
+  // ============================================================
   btnJoin.addEventListener('click', async () => {
     clearEntryError();
     const room = sanitizeRoom(secretInput.value);
-    if (!room){
-      showEntryError('Kata rahasia nggak boleh kosong ya.');
-      return;
-    }
+    if (!room){ showEntryError('Kata rahasia nggak boleh kosong ya.'); return; }
 
     btnJoin.disabled = true;
     btnJoin.textContent = 'Menyiapkan kamera...';
 
     try{
-      localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+      const constraints = {
+        audio: true,
+        video: Object.assign({ facingMode:{ ideal: currentFacingMode } }, QUALITY_PRESETS[currentQuality]),
+      };
+      localStream = await navigator.mediaDevices.getUserMedia(constraints);
     }catch(err){
-      btnJoin.disabled = false;
-      btnJoin.textContent = 'Mulai / Gabung';
+      resetJoinButton();
       showEntryError('Nggak bisa akses kamera/mic. Pastikan izin browser sudah diizinkan, dan situs ini dibuka lewat HTTPS.');
       return;
     }
@@ -287,32 +425,38 @@
     localVideo.srcObject = localStream;
     localPreviewWaiting.srcObject = localStream;
     btnJoin.textContent = 'Menyambungkan...';
+    currentRoom = room;
+    waitingRoomLabel.textContent = secretInput.value.trim();
 
-    connectAsHost(room);
+    connectAsHost(room, false);
   });
 
-  function connectAsHost(room){
+  function connectAsHost(room, isReconnect){
     const hostId = room + '-1';
     const guestId = room + '-2';
-
     const p = new Peer(hostId, { debug: 0 });
 
     p.on('open', () => {
-      peer = p;
-      waitingRoomLabel.textContent = secretInput.value.trim();
-      showScreen('waiting');
+      peer = p; role = 'host'; hostIdGlobal = hostId;
+      if (!isReconnect) showScreen('waiting');
       resetJoinButton();
 
       peer.on('call', incomingCall => {
         incomingCall.answer(localStream);
         bindCallEvents(incomingCall);
       });
+      peer.on('connection', conn => {
+        dataConn = conn;
+        bindDataConnEvents(conn);
+      });
     });
 
     p.on('error', err => {
       if (err.type === 'unavailable-id'){
-        p.destroy();
-        connectAsGuest(room, hostId, guestId);
+        try{ p.destroy(); }catch(e){}
+        connectAsGuest(room, hostId, guestId, isReconnect);
+      } else if (isReconnect){
+        scheduleReconnectRetry(room);
       } else {
         resetJoinButton();
         showEntryError('Gagal terhubung (' + err.type + '). Coba lagi sebentar.');
@@ -320,49 +464,148 @@
     });
   }
 
-  function connectAsGuest(room, hostId, guestId){
+  function connectAsGuest(room, hostId, guestId, isReconnect){
     const p = new Peer(guestId, { debug: 0 });
 
     p.on('open', () => {
-      peer = p;
-      waitingRoomLabel.textContent = secretInput.value.trim();
-      showScreen('waiting');
+      peer = p; role = 'guest'; hostIdGlobal = hostId;
+      if (!isReconnect) showScreen('waiting');
       resetJoinButton();
 
       const call = peer.call(hostId, localStream);
       bindCallEvents(call);
+
+      const conn = peer.connect(hostId);
+      dataConn = conn;
+      bindDataConnEvents(conn);
     });
 
     p.on('error', err => {
-      resetJoinButton();
-      showEntryError('Gagal terhubung (' + err.type + '). Coba lagi sebentar.');
+      if (isReconnect){
+        scheduleReconnectRetry(room);
+      } else {
+        resetJoinButton();
+        showEntryError('Gagal terhubung (' + err.type + '). Coba lagi sebentar.');
+      }
     });
   }
 
+  // ============================================================
+  // CALL EVENTS + AUTO-RECONNECT
+  // ============================================================
   function bindCallEvents(call){
     currentCall = call;
+
     call.on('stream', remoteStream => {
-      remoteVideo.srcObject = remoteStream;
-      remoteVideo.play().catch(()=>{});
+      if (call !== currentCall) return;
+      attachRemoteStream(remoteStream);
       showScreen('call');
+      reconnectAttempts = 0;
+      setStatus('Tersambung', 'var(--good)');
+      monitorConnection(call);
+      startStatsMonitor(call);
     });
-    call.on('close', () => endCall('Pasangan kamu mengakhiri panggilan.'));
-    call.on('error', () => endCall('Koneksi terputus.'));
+
+    call.on('close', () => {
+      if (call !== currentCall) return;
+      endCall('Pasangan kamu mengakhiri panggilan.');
+    });
+
+    call.on('error', () => {
+      if (call !== currentCall) return;
+      attemptReconnect();
+    });
   }
 
-  function resetJoinButton(){
-    btnJoin.disabled = false;
-    btnJoin.textContent = 'Mulai / Gabung';
+  function attachRemoteStream(remoteStream){
+    remoteVideo.srcObject = remoteStream;
+    const playPromise = remoteVideo.play();
+    if (playPromise && playPromise.catch){
+      playPromise.catch(() => { tapOverlay.classList.add('show'); });
+    }
   }
-
-  // ---------- batalkan saat menunggu ----------
-  btnCancelWait.addEventListener('click', () => {
-    cleanupConnection();
-    showScreen('entry');
+  tapOverlay.addEventListener('click', () => {
+    remoteVideo.play().then(() => tapOverlay.classList.remove('show')).catch(()=>{});
   });
 
-  // ---------- kontrol saat panggilan ----------
+  function monitorConnection(call){
+    if (!call.peerConnection) return;
+    call.peerConnection.oniceconnectionstatechange = () => {
+      if (call !== currentCall) return;
+      const state = call.peerConnection.iceConnectionState;
+      if (state === 'disconnected'){
+        setStatus('Koneksi goyang...', 'var(--warn)');
+        clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(() => {
+          if (call !== currentCall) return;
+          if (call.peerConnection.iceConnectionState === 'disconnected'){
+            attemptReconnect();
+          }
+        }, 4000);
+      } else if (state === 'failed'){
+        attemptReconnect();
+      } else if (state === 'connected' || state === 'completed'){
+        reconnectAttempts = 0;
+      }
+    };
+  }
+
+  function attemptReconnect(){
+    if (!currentRoom) return;
+    if (reconnectAttempts >= MAX_RECONNECT){
+      endCall('Koneksi terputus dan gagal tersambung ulang. Coba mulai lagi ya.');
+      return;
+    }
+    reconnectAttempts++;
+    setStatus('Menyambung ulang... (' + reconnectAttempts + '/' + MAX_RECONNECT + ')', 'var(--warn)');
+    teardownPeerOnly();
+    setTimeout(() => { connectAsHost(currentRoom, true); }, 1200 * reconnectAttempts);
+  }
+
+  function scheduleReconnectRetry(room){
+    if (reconnectAttempts >= MAX_RECONNECT){
+      endCall('Koneksi terputus dan gagal tersambung ulang. Coba mulai lagi ya.');
+      return;
+    }
+    setTimeout(() => { connectAsHost(room, true); }, 1500);
+  }
+
+  // ============================================================
+  // KONEKSI: kualitas jaringan (Baik / Sedang / Lemah)
+  // ============================================================
+  function startStatsMonitor(call){
+    stopStatsMonitor();
+    statsInterval = setInterval(async () => {
+      if (!call.peerConnection || call !== currentCall) return;
+      try{
+        const stats = await call.peerConnection.getStats();
+        let rtt = null, lost = 0, received = 0;
+        stats.forEach(report => {
+          if (report.type === 'candidate-pair' && report.state === 'succeeded' && report.currentRoundTripTime != null){
+            rtt = report.currentRoundTripTime;
+          }
+          if (report.type === 'inbound-rtp' && report.kind === 'video'){
+            lost = report.packetsLost || 0;
+            received = report.packetsReceived || 0;
+          }
+        });
+        if (reconnectAttempts === 0){
+          let label = 'Baik', color = 'var(--good)';
+          const lossRatio = received > 0 ? lost / (lost + received) : 0;
+          if (rtt !== null && (rtt > 0.3 || lossRatio > 0.08)){ label = 'Lemah'; color = 'var(--danger)'; }
+          else if (rtt !== null && (rtt > 0.15 || lossRatio > 0.03)){ label = 'Sedang'; color = 'var(--warn)'; }
+          setStatus('Tersambung · ' + label, color);
+        }
+      }catch(e){ /* abaikan, tidak kritis */ }
+    }, 3000);
+  }
+  function stopStatsMonitor(){ if (statsInterval){ clearInterval(statsInterval); statsInterval = null; } }
+
+  // ============================================================
+  // KONTROL: mic / kamera / ganti kamera / kualitas / akhiri
+  // ============================================================
   btnMic.addEventListener('click', () => {
+    if (!localStream) return;
     const track = localStream.getAudioTracks()[0];
     if (!track) return;
     track.enabled = !track.enabled;
@@ -370,44 +613,151 @@
   });
 
   btnCam.addEventListener('click', () => {
+    if (!localStream) return;
     const track = localStream.getVideoTracks()[0];
     if (!track) return;
     track.enabled = !track.enabled;
     btnCam.classList.toggle('off', !track.enabled);
   });
 
+  btnSwitchCam.addEventListener('click', async () => {
+    if (!localStream) return;
+    btnSwitchCam.disabled = true;
+    const nextFacing = currentFacingMode === 'user' ? 'environment' : 'user';
+    try{
+      const constraints = Object.assign({ facingMode:{ ideal: nextFacing } }, QUALITY_PRESETS[currentQuality]);
+      const newStream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio:false });
+      const newTrack = newStream.getVideoTracks()[0];
+      const oldTrack = localStream.getVideoTracks()[0];
+      newTrack.enabled = oldTrack ? oldTrack.enabled : true;
+
+      if (currentCall && currentCall.peerConnection){
+        const sender = currentCall.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+        if (sender) await sender.replaceTrack(newTrack);
+      }
+      if (oldTrack){ localStream.removeTrack(oldTrack); oldTrack.stop(); }
+      localStream.addTrack(newTrack);
+      currentFacingMode = nextFacing;
+      applyBitrate(currentCall, currentQuality);
+    }catch(e){ /* kamera lain mungkin tidak tersedia, biarkan kamera sekarang aktif */ }
+    finally{ btnSwitchCam.disabled = false; }
+  });
+
+  btnQuality.addEventListener('click', () => {
+    const order = ['hemat', 'normal', 'hd'];
+    const idx = (order.indexOf(currentQuality) + 1) % order.length;
+    applyQualityMidCall(order[idx]);
+  });
+
+  function applyQualityMidCall(q){
+    currentQuality = q;
+    setQualityIconState(q);
+    setQualityRowUI(q);
+    const track = localStream && localStream.getVideoTracks()[0];
+    if (track && track.applyConstraints){
+      track.applyConstraints(QUALITY_PRESETS[q]).catch(()=>{});
+    }
+    applyBitrate(currentCall, q);
+  }
+
+  function applyBitrate(call, quality){
+    if (!call || !call.peerConnection) return;
+    const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+    if (!sender) return;
+    try{
+      const params = sender.getParameters();
+      if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
+      params.encodings[0].maxBitrate = QUALITY_BITRATE[quality];
+      sender.setParameters(params).catch(()=>{});
+    }catch(e){ /* browser lama mungkin tidak dukung, aman diabaikan */ }
+  }
+
+  btnCancelWait.addEventListener('click', () => { cleanupConnection(); showScreen('entry'); });
   btnEnd.addEventListener('click', () => endCall());
 
-  function endCall(message){
-    cleanupConnection();
-    showScreen('entry');
-    if (message){
-      showEntryError(message);
+  // ============================================================
+  // CHAT (data channel)
+  // ============================================================
+  function bindDataConnEvents(conn){
+    conn.on('data', data => {
+      appendChatMessage('them', String(data));
+      if (!chatPanel.classList.contains('open')){
+        chatUnread++;
+        chatBadge.classList.add('show');
+      }
+    });
+    conn.on('close', () => { if (dataConn === conn) dataConn = null; });
+  }
+
+  function appendChatMessage(who, text){
+    const div = document.createElement('div');
+    div.className = 'chat-msg ' + who;
+    div.textContent = text; // textContent, bukan innerHTML -> aman dari injeksi
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function sendChatMessage(){
+    const text = chatInput.value.trim();
+    if (!text) return;
+    if (dataConn && dataConn.open){
+      dataConn.send(text);
+      appendChatMessage('me', text);
+      chatInput.value = '';
     }
+  }
+  btnChatSend.addEventListener('click', sendChatMessage);
+  chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
+
+  btnChatToggle.addEventListener('click', () => {
+    chatPanel.classList.toggle('open');
+    if (chatPanel.classList.contains('open')){
+      chatUnread = 0;
+      chatBadge.classList.remove('show');
+    }
+  });
+  btnChatClose.addEventListener('click', () => chatPanel.classList.remove('open'));
+
+  // ============================================================
+  // BERSIH-BERSIH
+  // ============================================================
+  function teardownPeerOnly(){
+    const callRef = currentCall; currentCall = null;
+    if (callRef){ try{ callRef.close(); }catch(e){} }
+    const connRef = dataConn; dataConn = null;
+    if (connRef){ try{ connRef.close(); }catch(e){} }
+    const peerRef = peer; peer = null;
+    if (peerRef){ try{ peerRef.destroy(); }catch(e){} }
+    stopStatsMonitor();
+    clearTimeout(reconnectTimer);
   }
 
   function cleanupConnection(){
-    if (currentCall){
-      try{ currentCall.close(); }catch(e){}
-      currentCall = null;
-    }
-    if (peer){
-      try{ peer.destroy(); }catch(e){}
-      peer = null;
-    }
-    if (localStream){
-      localStream.getTracks().forEach(t => t.stop());
-      localStream = null;
-    }
+    teardownPeerOnly();
+    if (localStream){ localStream.getTracks().forEach(t => t.stop()); localStream = null; }
     remoteVideo.srcObject = null;
     localVideo.srcObject = null;
     localPreviewWaiting.srcObject = null;
     btnMic.classList.remove('off');
     btnCam.classList.remove('off');
+    tapOverlay.classList.remove('show');
+    chatPanel.classList.remove('open');
+    chatMessages.innerHTML = '';
+    chatBadge.classList.remove('show');
+    chatUnread = 0;
+    reconnectAttempts = 0;
+    currentRoom = null;
+    role = null;
+  }
+
+  function endCall(message){
+    cleanupConnection();
+    showScreen('entry');
+    if (message) showEntryError(message);
   }
 
   window.addEventListener('beforeunload', () => {
-    if (peer) { try{ peer.destroy(); }catch(e){} }
+    if (peer){ try{ peer.destroy(); }catch(e){} }
   });
 })();
 </script>
