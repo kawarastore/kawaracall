@@ -3,806 +3,1231 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>KAWARA CALL — Video Call Pribadi</title>
+<title>Kawara Call — Ruang Video Bersama</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500;1,9..144,600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#1a1625;
-    --dusk:#2b2240;
-    --dusk-2:#382c52;
-    --blush:#f3a989;
-    --glow:#ffd9b8;
-    --mist:#cdc3e0;
-    --paper:#faf6f2;
-    --danger:#e8607a;
-    --warn:#ffd166;
-    --good:#7cf2a4;
+    --void:#0a0614;
+    --deep:#150a29;
+    --mid:#231143;
+    --violet:#6d28d9;
+    --violet-2:#8b5cf6;
+    --lilac:#c9b8ff;
+    --magenta:#e879f9;
+    --paper:#f6f1ff;
+    --mist:#b7a9dd;
+    --good:#4ade80;
+    --warn:#fbbf24;
+    --danger:#f87171;
+    --glass:rgba(255,255,255,.05);
+    --glass-brd:rgba(199,177,255,.16);
   }
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body{ height:100%; }
   body{
-    margin:0;
-    min-height:100svh;
-    background:radial-gradient(120% 90% at 50% -10%, var(--dusk-2) 0%, var(--ink) 55%);
-    color:var(--paper);
+    margin:0; min-height:100svh; color:var(--paper);
     font-family:'Sora', system-ui, sans-serif;
+    background:var(--void);
     display:flex; align-items:center; justify-content:center;
-    padding:24px;
-    overflow-x:hidden;
-    /* performa: hindari overscroll bounce berat di iOS saat layar penuh video */
+    padding:22px; overflow-x:hidden; position:relative;
     overscroll-behavior:none;
   }
 
-  /* ---------- signature element: the thread (pakai transform, bukan `left`, biar ringan di iPhone) ---------- */
-  .thread{ display:flex; align-items:center; justify-content:center; width:220px; height:24px; margin:0 auto 28px; position:relative; }
-  .thread .node{ width:14px; height:14px; border-radius:50%; background:var(--blush); box-shadow:0 0 14px var(--blush); flex:0 0 auto; z-index:2; will-change:transform; }
-  .thread .node:last-child{ background:var(--glow); box-shadow:0 0 14px var(--glow); }
-  .thread .line{ flex:1; height:2px; margin:0 -1px; background-image:linear-gradient(90deg, var(--mist) 50%, transparent 50%); background-size:10px 2px; position:relative; overflow:hidden; }
-  .thread .line::after{
-    content:''; position:absolute; top:-3px; left:0; width:8px; height:8px; border-radius:50%;
-    background:var(--paper); box-shadow:0 0 8px var(--paper);
-    animation:travel 3.2s ease-in-out infinite; will-change:transform, opacity;
+  /* ---------- aurora backdrop (signature) ---------- */
+  .aurora{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+  .aurora span{
+    position:absolute; border-radius:50%; filter:blur(70px); opacity:.55;
+    will-change:transform; animation:drift 22s ease-in-out infinite;
   }
-  @keyframes travel{
-    0%{ transform:translateX(0); opacity:0; }
-    10%{ opacity:1; }
-    90%{ opacity:1; }
-    100%{ transform:translateX(calc(100% - 8px)); opacity:0; }
-  }
-  .thread.pulsing .node{ animation:pulse 1.6s ease-in-out infinite; }
+  .aurora span:nth-child(1){ width:46vw; height:46vw; left:-12vw; top:-14vw; background:radial-gradient(circle, var(--violet-2), transparent 70%); animation-delay:0s; }
+  .aurora span:nth-child(2){ width:38vw; height:38vw; right:-10vw; top:8vw; background:radial-gradient(circle, var(--magenta), transparent 70%); animation-delay:-7s; }
+  .aurora span:nth-child(3){ width:42vw; height:42vw; left:22vw; bottom:-18vw; background:radial-gradient(circle, var(--violet), transparent 70%); animation-delay:-14s; }
+  @keyframes drift{ 0%,100%{ transform:translate(0,0) scale(1); } 50%{ transform:translate(4%,-3%) scale(1.08); } }
+  .noise{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  /* ---------- signature thread ---------- */
+  .thread{ display:flex; align-items:center; justify-content:center; width:180px; height:22px; margin:0 auto 22px; position:relative; z-index:1; }
+  .thread .node{ width:12px; height:12px; border-radius:50%; background:var(--violet-2); box-shadow:0 0 16px var(--violet-2); flex:0 0 auto; }
+  .thread .node:last-child{ background:var(--magenta); box-shadow:0 0 16px var(--magenta); }
+  .thread .line{ flex:1; height:2px; margin:0 -1px; background-image:linear-gradient(90deg, var(--lilac) 50%, transparent 50%); background-size:9px 2px; position:relative; overflow:hidden; }
+  .thread .line::after{ content:''; position:absolute; top:-3px; left:0; width:8px; height:8px; border-radius:50%; background:var(--paper); box-shadow:0 0 10px var(--paper); animation:travel 3s ease-in-out infinite; }
+  @keyframes travel{ 0%{ transform:translateX(0); opacity:0; } 10%{opacity:1;} 90%{opacity:1;} 100%{ transform:translateX(calc(100% - 8px)); opacity:0; } }
+  .thread.pulsing .node{ animation:pulse 1.5s ease-in-out infinite; }
   .thread.pulsing .node:last-child{ animation-delay:.3s; }
-  @keyframes pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.3); } }
+  @keyframes pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.35); } }
 
   /* ---------- screens ---------- */
-  .screen{ display:none; width:100%; max-width:440px; text-align:center; }
+  .screen{ display:none; width:100%; max-width:460px; text-align:center; position:relative; z-index:1; }
   .screen.active{ display:block; animation:fadeIn .4s ease both; }
-  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
 
-  h1{ font-family:'Fraunces', serif; font-style:italic; font-weight:500; font-size:clamp(28px,6vw,38px); margin:0 0 8px; letter-spacing:.2px; }
-  h2{ font-family:'Fraunces', serif; font-style:italic; font-weight:500; font-size:24px; margin:0 0 6px; }
-  .tagline{ color:var(--mist); margin:0 0 28px; font-size:15px; }
+  h1{ font-family:'Fraunces', serif; font-style:italic; font-weight:500; font-size:clamp(28px,6vw,40px); margin:0 0 6px; background:linear-gradient(135deg, var(--paper), var(--lilac)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  h2{ font-family:'Fraunces', serif; font-style:italic; font-weight:500; font-size:23px; margin:0 0 6px; color:var(--paper); }
+  .eyebrow{ text-transform:uppercase; letter-spacing:2.5px; font-size:11px; color:var(--magenta); font-weight:700; margin:0 0 10px; }
+  .tagline{ color:var(--mist); margin:0 0 26px; font-size:14.5px; line-height:1.5; }
 
-  .card{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:24px; padding:28px 24px; backdrop-filter:blur(6px); }
-  .card label{ display:block; text-align:left; font-size:13px; color:var(--mist); margin-bottom:8px; }
-  .card input{ width:100%; padding:14px 16px; border-radius:14px; border:1px solid rgba(255,255,255,.12); background:var(--ink); color:var(--paper); font-family:'Sora'; font-size:16px; outline:none; }
-  .card input:focus{ border-color:var(--blush); box-shadow:0 0 0 3px rgba(243,169,137,.2); }
-  .hint{ font-size:12.5px; color:var(--mist); margin:12px 0 0; line-height:1.5; }
+  .card{ background:var(--glass); border:1px solid var(--glass-brd); border-radius:22px; padding:26px 22px; backdrop-filter:blur(14px); text-align:left; margin-bottom:16px; }
+  .card + .card{ margin-top:16px; }
+  .card h3{ font-family:'Sora'; font-size:14px; font-weight:700; margin:0 0 14px; color:var(--lilac); display:flex; align-items:center; gap:8px; }
+  .card label{ display:block; font-size:12.5px; color:var(--mist); margin:0 0 6px; }
+  .field{ margin-bottom:12px; }
+  .card input{ width:100%; padding:13px 15px; border-radius:13px; border:1px solid rgba(255,255,255,.12); background:var(--void); color:var(--paper); font-family:'Sora'; font-size:15.5px; outline:none; transition:border-color .15s ease, box-shadow .15s ease; }
+  .card input:focus{ border-color:var(--violet-2); box-shadow:0 0 0 3px rgba(139,92,246,.22); }
+  .row2{ display:flex; gap:10px; }
+  .row2 .field{ flex:1; }
+  .hint{ font-size:12px; color:var(--mist); margin:10px 0 0; line-height:1.5; }
 
   button{ font-family:'Sora'; cursor:pointer; border:none; }
-  #btn-join{ width:100%; margin-top:16px; padding:14px 16px; border-radius:14px; background:linear-gradient(135deg, var(--blush), var(--glow)); color:var(--ink); font-weight:700; font-size:15px; transition:transform .15s ease, opacity .15s ease; }
-  #btn-join:active{ transform:scale(.98); }
-  #btn-join:disabled{ opacity:.6; cursor:default; }
+  .btn-primary{ width:100%; padding:14px 16px; border-radius:14px; background:linear-gradient(135deg, var(--violet-2), var(--magenta)); color:#180a2b; font-weight:800; font-size:15px; transition:transform .15s ease, opacity .15s ease; letter-spacing:.2px; }
+  .btn-primary:active{ transform:scale(.98); }
+  .btn-primary:disabled{ opacity:.55; cursor:default; }
+  .btn-ghost{ width:100%; padding:12px 16px; border-radius:14px; background:transparent; border:1px solid var(--glass-brd) !important; color:var(--mist); font-size:13.5px; font-weight:600; }
+  .btn-ghost:active{ transform:scale(.98); }
 
-  .quality-row{ display:flex; gap:8px; margin-top:14px; }
-  .quality-opt{ flex:1; padding:9px 6px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1) !important; color:var(--mist); font-size:12.5px; font-weight:600; }
-  .quality-opt.active{ background:rgba(243,169,137,.18); border-color:var(--blush) !important; color:var(--glow); }
+  .userchip{ display:inline-flex; align-items:center; gap:8px; background:var(--glass); border:1px solid var(--glass-brd); padding:7px 14px 7px 8px; border-radius:999px; font-size:13px; color:var(--lilac); margin-bottom:18px; }
+  .userchip .avatar{ width:24px; height:24px; border-radius:50%; background:linear-gradient(135deg, var(--violet-2), var(--magenta)); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11px; color:#180a2b; }
+  .userchip button{ background:transparent; color:var(--mist); font-size:11px; text-decoration:underline; padding:0; }
 
-  .ghost{ margin-top:20px; background:transparent; color:var(--mist); border:1px solid rgba(255,255,255,.15) !important; padding:10px 18px; border-radius:12px; font-size:13px; }
+  .room-list{ display:flex; flex-direction:column; gap:10px; }
+  .room-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(255,255,255,.03); border:1px solid var(--glass-brd); border-radius:14px; padding:12px 14px; }
+  .room-item .ri-name{ font-weight:700; font-size:14px; color:var(--paper); }
+  .room-item .ri-meta{ font-size:11.5px; color:var(--mist); margin-top:2px; }
+  .room-item button{ background:rgba(139,92,246,.18); color:var(--lilac); border:1px solid var(--violet-2) !important; padding:8px 14px; border-radius:10px; font-size:12.5px; font-weight:700; }
+  .empty{ text-align:center; color:var(--mist); font-size:12.5px; padding:14px 6px; }
 
-  .error{ color:var(--danger); font-size:13.5px; margin:16px 0 0; }
-  .footnote{ color:rgba(205,195,224,.6); font-size:11.5px; margin-top:26px; line-height:1.6; }
+  .error{ color:var(--danger); font-size:13.5px; margin:14px 0 0; }
+  .footnote{ color:rgba(183,169,221,.65); font-size:11.5px; margin-top:22px; line-height:1.6; }
 
-  #waiting-room{ color:var(--glow); }
-  video#local-preview-waiting{ width:160px; aspect-ratio:1/1; object-fit:cover; border-radius:50%; margin:22px auto 6px; display:block; border:2px solid var(--blush); transform:scaleX(-1); background:var(--dusk); }
+  /* ---------- room code reveal ---------- */
+  .code-box{ display:flex; gap:10px; justify-content:center; margin:18px 0 6px; }
+  .code-box .chip{ background:var(--void); border:1px solid var(--glass-brd); border-radius:12px; padding:12px 16px; }
+  .code-box .chip b{ display:block; font-size:22px; letter-spacing:3px; font-family:'Sora'; font-weight:800; background:linear-gradient(135deg, var(--lilac), var(--magenta)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .code-box .chip span{ font-size:10px; color:var(--mist); text-transform:uppercase; letter-spacing:1.5px; }
+
+  video#local-preview-waiting{ width:150px; aspect-ratio:1/1; object-fit:cover; border-radius:50%; margin:20px auto 6px; display:block; border:2px solid var(--violet-2); box-shadow:0 0 30px rgba(139,92,246,.35); transform:scaleX(-1); background:var(--mid); }
 
   /* ---------- call screen ---------- */
-  #screen-call{ max-width:none; width:100%; height:100svh; position:fixed; inset:0; padding:0; }
-  #screen-call.active{ display:flex; align-items:center; justify-content:center; }
-  #remote-video{ width:100%; height:100%; object-fit:cover; background:var(--dusk); display:block; }
-  #local-video{
-    position:fixed; width:104px; aspect-ratio:3/4; object-fit:cover;
-    bottom:calc(100px + env(safe-area-inset-bottom)); right:16px; border-radius:18px;
-    border:2px solid rgba(255,255,255,.5); box-shadow:0 8px 20px rgba(0,0,0,.4);
-    transform:scaleX(-1); z-index:5; background:var(--dusk);
-  }
+  #screen-call{ max-width:none; width:100%; height:100svh; position:fixed; inset:0; padding:0; z-index:2; }
+  #screen-call.active{ display:flex; }
+  .stage{ width:100%; height:100%; display:grid; gap:6px; padding:6px; padding-top:calc(64px + env(safe-area-inset-top)); padding-bottom:calc(96px + env(safe-area-inset-bottom)); }
+  .tile{ position:relative; background:var(--mid); border-radius:18px; overflow:hidden; border:1px solid var(--glass-brd); min-height:120px; }
+  .tile video{ width:100%; height:100%; object-fit:cover; display:block; background:var(--mid); }
+  .tile.mirrored video{ transform:scaleX(-1); }
+  .tile .tag{ position:absolute; left:10px; bottom:10px; background:rgba(10,6,20,.55); backdrop-filter:blur(6px); padding:5px 10px; border-radius:999px; font-size:11.5px; display:flex; align-items:center; gap:6px; }
+  .tile .tag .micoff{ width:7px; height:7px; border-radius:50%; background:var(--danger); display:none; }
+  .tile.mic-off .tag .micoff{ display:inline-block; }
+  .tile .you-badge{ position:absolute; top:10px; right:10px; background:rgba(139,92,246,.35); border:1px solid var(--violet-2); padding:3px 9px; border-radius:999px; font-size:10px; font-weight:700; }
+  .tile .avatar-fallback{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+  .tile .avatar-fallback .circle{ width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg, var(--violet-2), var(--magenta)); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px; color:#180a2b; }
 
-  .status-pill{
-    position:fixed; top:calc(16px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
-    background:rgba(20,16,30,.55); backdrop-filter:blur(6px); color:var(--paper);
-    padding:8px 16px; border-radius:999px; font-size:12.5px;
-    display:flex; align-items:center; gap:8px; z-index:6; white-space:nowrap;
-  }
+  .status-pill{ position:fixed; top:calc(14px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:rgba(15,8,28,.6); backdrop-filter:blur(8px); color:var(--paper); padding:8px 16px; border-radius:999px; font-size:12px; display:flex; align-items:center; gap:8px; z-index:6; white-space:nowrap; border:1px solid var(--glass-brd); }
   .status-pill .dot{ width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good); flex:0 0 auto; transition:background .25s ease; }
 
-  .chat-toggle{
-    position:fixed; top:calc(16px + env(safe-area-inset-top)); right:16px; z-index:6;
-    width:40px; height:40px; border-radius:50%; background:rgba(20,16,30,.55); backdrop-filter:blur(6px);
-    color:var(--paper); display:flex; align-items:center; justify-content:center;
-  }
-  .chat-toggle svg{ width:19px; height:19px; }
-  .chat-badge{
-    position:absolute; top:-2px; right:-2px; width:9px; height:9px; border-radius:50%;
-    background:var(--danger); display:none;
-  }
-  .chat-badge.show{ display:block; }
+  .top-left-btn, .top-right-btn{ position:fixed; top:calc(14px + env(safe-area-inset-top)); z-index:6; width:38px; height:38px; border-radius:50%; background:rgba(15,8,28,.6); backdrop-filter:blur(8px); color:var(--paper); display:flex; align-items:center; justify-content:center; border:1px solid var(--glass-brd); }
+  .top-left-btn{ left:14px; } .top-right-btn{ right:14px; }
+  .top-left-btn svg, .top-right-btn svg{ width:17px; height:17px; }
+  .badge-dot{ position:absolute; top:-2px; right:-2px; width:9px; height:9px; border-radius:50%; background:var(--magenta); display:none; }
+  .badge-dot.show{ display:block; }
 
-  .controls{
-    position:fixed; bottom:calc(20px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
-    display:flex; gap:8px; z-index:5; background:rgba(20,16,30,.55); backdrop-filter:blur(8px);
-    padding:10px; border-radius:999px; flex-wrap:nowrap; max-width:calc(100vw - 20px);
-  }
-  .control{ width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,.12); color:var(--paper); display:flex; align-items:center; justify-content:center; flex:0 0 auto; transition:background .15s ease; }
-  .control svg{ width:19px; height:19px; }
-  .control.off{ background:var(--paper); color:var(--ink); }
-  .control.end{ background:var(--danger); color:#fff; width:54px; }
+  .privacy-shield{ position:fixed; inset:0; background:rgba(6,3,14,.92); backdrop-filter:blur(30px); z-index:12; display:none; align-items:center; justify-content:center; flex-direction:column; gap:10px; text-align:center; padding:24px; }
+  .privacy-shield.show{ display:flex; }
+  .privacy-shield svg{ width:34px; height:34px; color:var(--lilac); }
+  .privacy-shield b{ font-size:14.5px; } .privacy-shield span{ font-size:12.5px; color:var(--mist); max-width:280px; }
+
+  .controls{ position:fixed; bottom:calc(18px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); display:flex; gap:7px; z-index:5; background:rgba(15,8,28,.6); backdrop-filter:blur(10px); padding:9px; border-radius:999px; flex-wrap:nowrap; max-width:calc(100vw - 16px); overflow-x:auto; border:1px solid var(--glass-brd); }
+  .control{ width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.08); color:var(--paper); display:flex; align-items:center; justify-content:center; flex:0 0 auto; transition:background .15s ease, transform .1s ease; position:relative; }
+  .control svg{ width:18px; height:18px; }
+  .control.off{ background:var(--paper); color:var(--deep); }
+  .control.on-accent{ background:linear-gradient(135deg, var(--violet-2), var(--magenta)); color:#180a2b; }
+  .control.end{ background:var(--danger); color:#fff; width:52px; }
   .control:active{ transform:scale(.92); }
   .control:disabled{ opacity:.5; }
 
-  .qbar{ opacity:.35; transition:opacity .15s ease; }
-  .qbar.active{ opacity:1; }
+  /* ---------- side panels (chat / participants) ---------- */
+  .panel{ position:fixed; left:0; right:0; bottom:0; height:64vh; max-height:540px; background:var(--deep); border-radius:22px 22px 0 0; z-index:9; transform:translateY(100%); transition:transform .25s ease; display:flex; flex-direction:column; box-shadow:0 -14px 40px rgba(0,0,0,.5); border-top:1px solid var(--glass-brd); }
+  .panel.open{ transform:translateY(0); }
+  .panel-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--glass-brd); flex:0 0 auto; }
+  .panel-head strong{ font-size:14px; font-weight:700; }
+  .panel-close{ background:transparent; color:var(--mist); font-size:20px; line-height:1; padding:4px 8px; }
 
-  /* ---------- tap-to-unmute overlay (iOS autoplay policy) ---------- */
-  .tap-overlay{
-    position:fixed; inset:0; background:rgba(10,8,16,.55); z-index:8;
-    display:none; align-items:center; justify-content:center; text-align:center; color:var(--paper);
-    font-size:15px; padding:24px;
-  }
-  .tap-overlay.show{ display:flex; }
-
-  /* ---------- chat panel ---------- */
-  .chat-panel{
-    position:fixed; left:0; right:0; bottom:0; height:62vh; max-height:520px;
-    background:var(--dusk); border-radius:22px 22px 0 0; z-index:9;
-    transform:translateY(100%); transition:transform .25s ease;
-    display:flex; flex-direction:column; box-shadow:0 -10px 30px rgba(0,0,0,.4);
-  }
-  .chat-panel.open{ transform:translateY(0); }
-  .chat-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid rgba(255,255,255,.08); flex:0 0 auto; }
-  .chat-head strong{ font-size:14px; font-weight:600; }
-  .chat-close{ background:transparent; color:var(--mist); font-size:20px; line-height:1; padding:4px 8px; }
   .chat-messages{ flex:1 1 auto; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:8px; -webkit-overflow-scrolling:touch; }
-  .chat-msg{ max-width:75%; padding:9px 13px; border-radius:14px; font-size:13.5px; line-height:1.4; word-wrap:break-word; }
-  .chat-msg.me{ align-self:flex-end; background:linear-gradient(135deg, var(--blush), var(--glow)); color:var(--ink); border-bottom-right-radius:4px; }
-  .chat-msg.them{ align-self:flex-start; background:rgba(255,255,255,.08); color:var(--paper); border-bottom-left-radius:4px; }
-  .chat-input-row{ display:flex; gap:8px; padding:12px; padding-bottom:calc(12px + env(safe-area-inset-bottom)); flex:0 0 auto; border-top:1px solid rgba(255,255,255,.08); }
-  .chat-input-row input{ flex:1; background:var(--ink); border:1px solid rgba(255,255,255,.12); color:var(--paper); border-radius:14px; padding:11px 14px; font-family:'Sora'; font-size:14px; outline:none; }
-  .chat-input-row input:focus{ border-color:var(--blush); }
-  .chat-send{ width:44px; height:44px; border-radius:50%; background:var(--blush); color:var(--ink); display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .chat-msg{ max-width:78%; padding:9px 13px; border-radius:14px; font-size:13.5px; line-height:1.4; word-wrap:break-word; }
+  .chat-msg .who{ display:block; font-size:10.5px; opacity:.65; margin-bottom:2px; font-weight:700; }
+  .chat-msg.me{ align-self:flex-end; background:linear-gradient(135deg, var(--violet-2), var(--magenta)); color:#180a2b; border-bottom-right-radius:4px; }
+  .chat-msg.them{ align-self:flex-start; background:rgba(255,255,255,.07); color:var(--paper); border-bottom-left-radius:4px; }
+  .chat-msg.sys{ align-self:center; background:transparent; color:var(--mist); font-size:11.5px; }
+  .chat-input-row{ display:flex; gap:8px; padding:12px; padding-bottom:calc(12px + env(safe-area-inset-bottom)); flex:0 0 auto; border-top:1px solid var(--glass-brd); }
+  .chat-input-row input{ flex:1; background:var(--void); border:1px solid rgba(255,255,255,.12); color:var(--paper); border-radius:14px; padding:11px 14px; font-family:'Sora'; font-size:14px; outline:none; }
+  .chat-input-row input:focus{ border-color:var(--violet-2); }
+  .chat-send{ width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, var(--violet-2), var(--magenta)); color:#180a2b; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
   .chat-send svg{ width:18px; height:18px; }
 
+  .plist{ flex:1 1 auto; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:8px; }
+  .plist .prow{ display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.03); padding:10px 12px; border-radius:12px; }
+  .plist .prow .circle{ width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, var(--violet-2), var(--magenta)); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:#180a2b; flex:0 0 auto; }
+  .plist .prow .nm{ font-size:13.5px; font-weight:600; }
+  .plist .prow .role{ font-size:10.5px; color:var(--mist); }
+  .panel-foot{ padding:12px 16px; border-top:1px solid var(--glass-brd); font-size:11.5px; color:var(--mist); text-align:center; }
+
+  /* filter picker */
+  .filter-strip{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(76px + env(safe-area-inset-bottom)); z-index:7; display:none; gap:8px; background:rgba(15,8,28,.7); backdrop-filter:blur(10px); padding:8px; border-radius:16px; border:1px solid var(--glass-brd); }
+  .filter-strip.show{ display:flex; }
+  .filter-opt{ padding:8px 12px; border-radius:11px; background:rgba(255,255,255,.06); color:var(--mist); font-size:12px; font-weight:700; border:1px solid transparent !important; }
+  .filter-opt.active{ background:rgba(139,92,246,.22); color:var(--lilac); border-color:var(--violet-2) !important; }
+
+  .toast{ position:fixed; left:50%; top:calc(64px + env(safe-area-inset-top)); transform:translateX(-50%); background:rgba(15,8,28,.85); border:1px solid var(--glass-brd); padding:9px 16px; border-radius:12px; font-size:12.5px; z-index:20; opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(4px); }
+
+  ::-webkit-scrollbar{ width:6px; } ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.15); border-radius:3px; }
+
   @media (prefers-reduced-motion: reduce){
-    .thread .line::after, .thread.pulsing .node{ animation:none; }
+    .thread .line::after, .thread.pulsing .node, .aurora span{ animation:none; }
     .screen.active{ animation:none; }
   }
-
-  /* layar sempit: kurangi blur supaya lebih ringan di hp lawas */
   @media (max-width:380px){
-    .status-pill, .controls, .chat-toggle{ backdrop-filter:blur(4px); }
-    .control{ width:42px; height:42px; }
-    .control.end{ width:50px; }
+    .control{ width:41px; height:41px; }
+    .control.end{ width:48px; }
   }
 </style>
 </head>
-<body>
+<body oncontextmenu="return false" onselectstart="return false" ondragstart="return false">
+
+<div class="aurora"><span></span><span></span><span></span></div>
+<div class="noise"></div>
 
 <div id="app">
 
-  <!-- ===== LAYAR 1: MASUK ===== -->
-  <section id="screen-entry" class="screen active">
+  <!-- ===== LAYAR 0: NAMA ===== -->
+  <section id="screen-name" class="screen active">
     <div class="thread"><span class="node"></span><span class="line"></span><span class="node"></span></div>
-    <h1>Kawara Call</h1>
-    <p class="tagline">Hanya kita berdua — ruang video call pribadi. Cuma kalian berdua yang bisa masuk.</p>
-
+    <p class="eyebrow">Kawara Call</p>
+    <h1>Siapa nama kamu?</h1>
+    <p class="tagline">Nama ini akan dilihat oleh orang lain di dalam room. Wajib diisi sebelum masuk lobby.</p>
     <div class="card">
-      <label for="secret">Kata rahasia kalian berdua</label>
-      <input id="secret" placeholder="misal: senja ungu 23" autocomplete="off" maxlength="60">
-
-      <div class="quality-row" id="quality-row">
-        <button type="button" class="quality-opt" data-q="hemat">Hemat Data</button>
-        <button type="button" class="quality-opt" data-q="normal">Normal</button>
-        <button type="button" class="quality-opt" data-q="hd">HD</button>
+      <div class="field">
+        <label for="username">Nama panggilan</label>
+        <input id="username" placeholder="misal: Rafi" maxlength="24" autocomplete="off">
       </div>
-
-      <button id="btn-join">Mulai / Gabung</button>
-      <p class="hint">Berdua ketik kata yang <em>persis sama</em>. Yang buka duluan akan menunggu, yang kedua otomatis langsung tersambung.</p>
+      <button id="btn-save-name" class="btn-primary">Lanjut ke Lobby</button>
     </div>
-
-    <p id="entry-error" class="error" hidden></p>
-    <p class="footnote">Video & suara mengalir langsung antar browser kalian (peer-to-peer) — tidak direkam atau disimpan di server mana pun. Tetap pilih kata rahasia yang unik, ya.</p>
+    <p id="name-error" class="error" hidden></p>
+    <p class="footnote">Video &amp; suara mengalir langsung antar perangkat (peer-to-peer) — tidak disimpan di server mana pun.</p>
   </section>
 
-  <!-- ===== LAYAR 2: MENUNGGU ===== -->
+  <!-- ===== LAYAR 1: LOBBY ===== -->
+  <section id="screen-lobby" class="screen">
+    <div class="thread"><span class="node"></span><span class="line"></span><span class="node"></span></div>
+    <div id="userchip-wrap"></div>
+    <h1 style="font-size:26px;">Lobby</h1>
+    <p class="tagline">Buat room baru untuk mengundang orang lain, atau gabung pakai kode &amp; kata sandi.</p>
+
+    <div class="card">
+      <h3>✨ Buat Room</h3>
+      <div class="field">
+        <label for="room-label">Nama room (opsional)</label>
+        <input id="room-label" placeholder="misal: Ngobrol Malam" maxlength="30">
+      </div>
+      <div class="field">
+        <label for="room-pass">Kata sandi angka (opsional — dibuat otomatis kalau kosong)</label>
+        <input id="room-pass" placeholder="misal: 4821" inputmode="numeric" pattern="[0-9]*" maxlength="8">
+      </div>
+      <button id="btn-create-room" class="btn-primary">Buat Room</button>
+    </div>
+
+    <div class="card">
+      <h3>🔑 Gabung Room</h3>
+      <div class="row2">
+        <div class="field">
+          <label for="join-code">Kode room</label>
+          <input id="join-code" placeholder="cth: 482910" inputmode="numeric" maxlength="8">
+        </div>
+        <div class="field">
+          <label for="join-pass">Kata sandi</label>
+          <input id="join-pass" placeholder="cth: 4821" inputmode="numeric" maxlength="8">
+        </div>
+      </div>
+      <button id="btn-join-room" class="btn-ghost" style="background:rgba(139,92,246,.14); color:var(--lilac); border-color:var(--violet-2) !important;">Gabung Sekarang</button>
+    </div>
+
+    <div class="card">
+      <h3>🕓 Room Saya</h3>
+      <div class="room-list" id="my-rooms-list"></div>
+    </div>
+
+    <p id="lobby-error" class="error" hidden></p>
+    <p class="footnote">Daftar "Room Saya" hanya tersimpan di perangkat ini. Untuk mengundang orang lain, bagikan kode room + kata sandi, atau kirim tautan undangan yang muncul setelah room dibuat.</p>
+  </section>
+
+  <!-- ===== LAYAR 2: MENUNGGU / INFO ROOM ===== -->
   <section id="screen-waiting" class="screen">
     <div class="thread pulsing"><span class="node"></span><span class="line"></span><span class="node"></span></div>
-    <h2>Menunggu dia gabung...</h2>
-    <p class="hint">Ruang: <strong id="waiting-room"></strong></p>
+    <h2 id="waiting-title">Menyiapkan room...</h2>
+    <p class="tagline" id="waiting-sub">Bagikan kode &amp; kata sandi ke orang yang ingin diundang.</p>
+    <div class="code-box" id="code-box" style="display:none;">
+      <div class="chip"><span>Kode Room</span><b id="show-room-code">------</b></div>
+      <div class="chip"><span>Kata Sandi</span><b id="show-room-pass">----</b></div>
+    </div>
     <video id="local-preview-waiting" autoplay muted playsinline></video>
-    <br>
-    <button id="btn-cancel-wait" class="ghost">Batalkan</button>
+    <div class="card" id="invite-link-card" style="display:none;">
+      <label>Tautan undangan</label>
+      <input id="invite-link" readonly>
+      <button id="btn-copy-link" class="btn-ghost" style="margin-top:10px;">Salin Tautan</button>
+    </div>
+    <button id="btn-enter-call" class="btn-primary" style="margin-top:6px;">Masuk ke Panggilan</button>
+    <button id="btn-cancel-wait" class="btn-ghost" style="margin-top:10px;">Batalkan</button>
   </section>
 
   <!-- ===== LAYAR 3: PANGGILAN ===== -->
   <section id="screen-call" class="screen">
-    <video id="remote-video" autoplay playsinline></video>
-    <video id="local-video" autoplay muted playsinline></video>
+    <div class="stage" id="stage"></div>
 
-    <div class="status-pill"><span class="dot" id="status-dot"></span><span id="status-text">Tersambung</span></div>
-
-    <button class="chat-toggle" id="btn-chat-toggle" aria-label="Chat">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 11.5a8.4 8.4 0 0 1-8.8 8.4 9 9 0 0 1-3.3-.6L3 21l1.7-5a8.4 8.4 0 0 1 8-12 8.4 8.4 0 0 1 8.3 8.5z"></path>
-      </svg>
-      <span class="chat-badge" id="chat-badge"></span>
+    <button class="top-left-btn" id="btn-info-toggle" aria-label="Info room">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="8" r=".6" fill="currentColor"></circle></svg>
     </button>
 
-    <div class="tap-overlay" id="tap-overlay">Ketuk layar untuk mengaktifkan suara</div>
+    <div class="status-pill"><span class="dot" id="status-dot"></span><span id="status-text">Menyambungkan...</span></div>
+
+    <button class="top-right-btn" id="btn-people-toggle" aria-label="Peserta" style="right:60px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      <span class="badge-dot" id="people-badge"></span>
+    </button>
+    <button class="top-right-btn" id="btn-chat-toggle" aria-label="Chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.8 8.4 9 9 0 0 1-3.3-.6L3 21l1.7-5a8.4 8.4 0 0 1 8-12 8.4 8.4 0 0 1 8.3 8.5z"></path></svg>
+      <span class="badge-dot" id="chat-badge"></span>
+    </button>
+
+    <div class="filter-strip" id="filter-strip">
+      <button class="filter-opt active" data-f="none">Tanpa Filter</button>
+      <button class="filter-opt" data-f="batman">🦇 Batman</button>
+    </div>
+
+    <div class="privacy-shield" id="privacy-shield">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      <b>Mode privasi aktif</b>
+      <span>Video disembunyikan sementara karena kamu berpindah aplikasi/tab. Kembali ke tab ini untuk melanjutkan.</span>
+    </div>
 
     <div class="controls">
       <button id="btn-mic" class="control" aria-label="Mikrofon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="2" width="6" height="11" rx="3"></rect>
-          <path d="M5 11a7 7 0 0 0 14 0"></path>
-          <line x1="12" y1="18" x2="12" y2="22"></line>
-          <line x1="8" y1="22" x2="16" y2="22"></line>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><line x1="12" y1="18" x2="12" y2="22"></line><line x1="8" y1="22" x2="16" y2="22"></line></svg>
       </button>
       <button id="btn-cam" class="control" aria-label="Kamera">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="6" width="14" height="12" rx="2"></rect>
-          <path d="M16 10.5 22 7v10l-6-3.5"></path>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"></rect><path d="M16 10.5 22 7v10l-6-3.5"></path></svg>
       </button>
       <button id="btn-switch-cam" class="control" aria-label="Ganti kamera">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 2l4 4-4 4"></path>
-          <path d="M21 6H8a4 4 0 0 0-4 4v1"></path>
-          <path d="M7 22l-4-4 4-4"></path>
-          <path d="M3 18h13a4 4 0 0 0 4-4v-1"></path>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"></path><path d="M21 6H8a4 4 0 0 0-4 4v1"></path><path d="M7 22l-4-4 4-4"></path><path d="M3 18h13a4 4 0 0 0 4-4v-1"></path></svg>
       </button>
-      <button id="btn-quality" class="control" aria-label="Kualitas video">
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <rect class="qbar qbar-1" x="3" y="14" width="4" height="7" rx="1"></rect>
-          <rect class="qbar qbar-2" x="10" y="9" width="4" height="12" rx="1"></rect>
-          <rect class="qbar qbar-3" x="17" y="4" width="4" height="17" rx="1"></rect>
-        </svg>
+      <button id="btn-screenshare" class="control" aria-label="Bagikan layar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+      </button>
+      <button id="btn-filter" class="control" aria-label="Filter wajah">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C7 5 4 8 4 12c0 4.5 3.5 8 8 8s8-3.5 8-8c0-4-3-7-8-10z"></path></svg>
       </button>
       <button id="btn-end" class="control end" aria-label="Akhiri panggilan">
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 9c-2.5 0-4.8.6-6.8 1.7a1 1 0 0 0-.4 1.4l1.2 2a1 1 0 0 0 1.3.4c1-.5 2.1-.9 3.2-1.1v-2.1c0-.6.4-1 .9-1.1.4-.1.9-.1 1.3-.1s.9 0 1.3.1c.5.1.9.5.9 1.1v2.1c1.1.2 2.2.6 3.2 1.1a1 1 0 0 0 1.3-.4l1.2-2a1 1 0 0 0-.4-1.4C16.8 9.6 14.5 9 12 9z"/>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 9c-2.5 0-4.8.6-6.8 1.7a1 1 0 0 0-.4 1.4l1.2 2a1 1 0 0 0 1.3.4c1-.5 2.1-.9 3.2-1.1v-2.1c0-.6.4-1 .9-1.1.4-.1.9-.1 1.3-.1s.9 0 1.3.1c.5.1.9.5.9 1.1v2.1c1.1.2 2.2.6 3.2 1.1a1 1 0 0 0 1.3-.4l1.2-2a1 1 0 0 0-.4-1.4C16.8 9.6 14.5 9 12 9z"/></svg>
       </button>
     </div>
 
-    <!-- panel chat teks -->
-    <div class="chat-panel" id="chat-panel">
-      <div class="chat-head">
-        <strong>Chat</strong>
-        <button class="chat-close" id="btn-chat-close" aria-label="Tutup chat">×</button>
-      </div>
+    <!-- panel chat -->
+    <div class="panel" id="chat-panel">
+      <div class="panel-head"><strong>Chat Room</strong><button class="panel-close" id="btn-chat-close">×</button></div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-row">
         <input id="chat-input" type="text" placeholder="Tulis pesan..." maxlength="500" autocomplete="off">
         <button class="chat-send" id="btn-chat-send" aria-label="Kirim">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
         </button>
       </div>
+    </div>
+
+    <!-- panel peserta -->
+    <div class="panel" id="people-panel">
+      <div class="panel-head"><strong>Peserta</strong><button class="panel-close" id="btn-people-close">×</button></div>
+      <div class="plist" id="plist"></div>
+      <div class="panel-foot" id="room-info-foot"></div>
     </div>
   </section>
 
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/face-api.js/0.22.2/face-api.min.js"></script>
 <script>
 (function(){
   // ============================================================
-  // ICE SERVERS (STUN + TURN)
-  // ------------------------------------------------------------
-  // PENTING: sebelumnya kode ini cuma pakai konfigurasi default
-  // PeerJS, yaitu STUN saja (tanpa TURN). STUN cuma membantu dua
-  // perangkat saling tahu alamat publik masing-masing — itu cukup
-  // kalau NAT kalian "ramah". Tapi begitu salah satu pihak ada di
-  // jaringan seluler/CGNAT, WiFi kantor, atau NAT simetris (sering
-  // terjadi pas dua HP beda lokasi & beda provider), STUN doang
-  // nggak akan pernah berhasil bikin koneksi langsung. Hasilnya:
-  // ICE gagal terus -> kode reconnect kita jalan -> gagal lagi ->
-  // jadi muter terus ("jaringan goyang" -> reconnect -> goyang lagi).
-  //
-  // Solusinya: tambahkan server TURN sebagai jalur relay cadangan.
-  // Di bawah ini pakai TURN gratis dari Open Relay Project (Metered)
-  // untuk keperluan testing. Untuk pemakaian jangka panjang/serius,
-  // sebaiknya pakai TURN sendiri (mis. coturn) atau layanan
-  // berbayar (Twilio, Xirsys, Metered berbayar), karena server
-  // gratis ini punya batas kuota & tidak dijamin selalu tersedia.
+  // CATATAN JUJUR (baca ini):
+  // 1) "Anti screenshot/record" di web TIDAK BISA 100% mencegah OS
+  //    melakukan screen recording/screenshot — browser tidak diberi
+  //    akses untuk memblokir itu. Yang diimplementasikan di bawah
+  //    ini adalah LAPISAN PENCEGAH (deterrent): blok klik-kanan/copy,
+  //    blur otomatis saat tab/app tidak fokus, dan notifikasi visual.
+  //    Anggap ini etiket & sopan santun digital, bukan kunci brankas.
+  // 2) "Room Saya" & password room disimpan lokal di perangkat & di
+  //    memori host (P2P, tanpa server pusat) — ini bukan sistem
+  //    otentikasi tingkat enterprise, cocok untuk pemakaian pribadi/
+  //    circle kecil, bukan untuk data sangat sensitif.
   // ============================================================
+
   const ICE_CONFIG = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
-      {
-        urls: 'turn:openrelay.metered.ca:80',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      },
-      {
-        urls: 'turn:openrelay.metered.ca:443',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      },
-      {
-        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      }
+      { urls: 'turn:openrelay.metered.ca:80', username:'openrelayproject', credential:'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443', username:'openrelayproject', credential:'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username:'openrelayproject', credential:'openrelayproject' },
     ],
-    // paksa coba relay kalau direct/STUN gagal, bukan cuma sebagai pelengkap
     iceTransportPolicy: 'all'
   };
 
   // ============================================================
-  // ELEMEN
+  // ELEMENTS
   // ============================================================
   const screens = {
-    entry: document.getElementById('screen-entry'),
+    name: document.getElementById('screen-name'),
+    lobby: document.getElementById('screen-lobby'),
     waiting: document.getElementById('screen-waiting'),
     call: document.getElementById('screen-call'),
   };
-  const secretInput = document.getElementById('secret');
-  const btnJoin = document.getElementById('btn-join');
-  const entryError = document.getElementById('entry-error');
-  const waitingRoomLabel = document.getElementById('waiting-room');
-  const localPreviewWaiting = document.getElementById('local-preview-waiting');
-  const btnCancelWait = document.getElementById('btn-cancel-wait');
-  const remoteVideo = document.getElementById('remote-video');
-  const localVideo = document.getElementById('local-video');
-  const btnMic = document.getElementById('btn-mic');
-  const btnCam = document.getElementById('btn-cam');
-  const btnSwitchCam = document.getElementById('btn-switch-cam');
-  const btnQuality = document.getElementById('btn-quality');
-  const btnEnd = document.getElementById('btn-end');
-  const statusDot = document.getElementById('status-dot');
-  const statusText = document.getElementById('status-text');
-  const tapOverlay = document.getElementById('tap-overlay');
-  const qualityRow = document.getElementById('quality-row');
+  const $ = id => document.getElementById(id);
+  const toastEl = $('toast');
+  function toast(msg, ms){ toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(()=>toastEl.classList.remove('show'), ms||2200); }
 
-  const btnChatToggle = document.getElementById('btn-chat-toggle');
-  const chatBadge = document.getElementById('chat-badge');
-  const chatPanel = document.getElementById('chat-panel');
-  const btnChatClose = document.getElementById('btn-chat-close');
-  const chatMessages = document.getElementById('chat-messages');
-  const chatInput = document.getElementById('chat-input');
-  const btnChatSend = document.getElementById('btn-chat-send');
+  function showScreen(name){ Object.values(screens).forEach(s=>s.classList.remove('active')); screens[name].classList.add('active'); }
+
+  // ============================================================
+  // USERNAME
+  // ============================================================
+  function getUsername(){ return localStorage.getItem('kawara_username') || ''; }
+  function setUsername(n){ localStorage.setItem('kawara_username', n); }
+
+  function renderUserChip(){
+    const name = getUsername();
+    const wrap = $('userchip-wrap');
+    if (!name){ wrap.innerHTML=''; return; }
+    const initial = name.trim().charAt(0).toUpperCase() || '?';
+    wrap.innerHTML = `<div class="userchip"><span class="avatar">${initial}</span>${escapeHtml(name)}<button id="btn-change-name">ganti</button></div>`;
+    $('btn-change-name').addEventListener('click', ()=>{ showScreen('name'); $('username').value = name; });
+  }
+
+  function escapeHtml(s){ const d=document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  $('btn-save-name').addEventListener('click', ()=>{
+    const v = $('username').value.trim();
+    $('name-error').hidden = true;
+    if (!v){ $('name-error').textContent='Nama nggak boleh kosong.'; $('name-error').hidden=false; return; }
+    if (v.length > 24){ $('name-error').textContent='Maksimal 24 karakter.'; $('name-error').hidden=false; return; }
+    setUsername(v);
+    renderUserChip();
+    enterLobby();
+  });
+  $('username').addEventListener('keydown', e=>{ if(e.key==='Enter') $('btn-save-name').click(); });
+
+  // ============================================================
+  // MY ROOMS (local device only)
+  // ============================================================
+  function getMyRooms(){ try{ return JSON.parse(localStorage.getItem('kawara_myrooms')||'[]'); }catch(e){ return []; } }
+  function saveMyRoom(r){
+    const list = getMyRooms().filter(x=>x.code!==r.code);
+    list.unshift(r);
+    localStorage.setItem('kawara_myrooms', JSON.stringify(list.slice(0,12)));
+    renderMyRooms();
+  }
+  function removeMyRoom(code){
+    localStorage.setItem('kawara_myrooms', JSON.stringify(getMyRooms().filter(x=>x.code!==code)));
+    renderMyRooms();
+  }
+  function renderMyRooms(){
+    const list = getMyRooms();
+    const el = $('my-rooms-list');
+    if (!list.length){ el.innerHTML = '<div class="empty">Belum ada room. Room yang kamu buat atau gabungi akan muncul di sini (khusus perangkat ini).</div>'; return; }
+    el.innerHTML = list.map(r => `
+      <div class="room-item" data-code="${r.code}">
+        <div>
+          <div class="ri-name">${escapeHtml(r.label || ('Room ' + r.code))}</div>
+          <div class="ri-meta">Kode ${r.code} · ${r.isHost ? 'Kamu buat' : 'Pernah gabung'}</div>
+        </div>
+        <button data-act="open">Buka</button>
+      </div>`).join('');
+    el.querySelectorAll('.room-item').forEach(row=>{
+      row.querySelector('[data-act="open"]').addEventListener('click', ()=>{
+        const code = row.dataset.code;
+        const r = getMyRooms().find(x=>x.code===code);
+        if (!r) return;
+        if (r.isHost){ startHostFlow(r.code, r.pass, r.label); }
+        else { $('join-code').value = r.code; toast('Masukkan kata sandi room untuk gabung.'); }
+      });
+    });
+  }
+
+  function enterLobby(){ renderUserChip(); renderMyRooms(); showScreen('lobby'); checkInviteLink(); }
+
+  function checkInviteLink(){
+    const params = new URLSearchParams(location.search);
+    const rc = params.get('room');
+    if (rc){ $('join-code').value = rc; toast('Kode room terisi dari tautan undangan. Tambahkan kata sandi lalu gabung.'); }
+  }
+
+  function randDigits(n){ let s=''; for(let i=0;i<n;i++) s += Math.floor(Math.random()*10); return s; }
+  function sanitizeCode(raw){ return (raw||'').replace(/\D/g,'').slice(0,8); }
 
   // ============================================================
   // STATE
   // ============================================================
-  let peer = null;
-  let localStream = null;
-  let currentCall = null;
-  let dataConn = null;
-  let role = null;            // 'host' | 'guest'
-  let hostIdGlobal = null;
-  let currentRoom = null;     // room id yang sudah disanitasi
-  let currentFacingMode = 'user';
-  let reconnectAttempts = 0;
-  let reconnectTimer = null;
-  let statsInterval = null;
-  let chatUnread = 0;
-
-  const MAX_RECONNECT = 3;
-
-  // deteksi hp/touch supaya default kualitas lebih ringan (hemat baterai & CPU)
-  function isMobileDevice(){
-    const ua = navigator.userAgent || '';
-    const touchMac = /MacIntel/.test(navigator.platform) && navigator.maxTouchPoints > 2;
-    return /iPhone|iPad|iPod|Android/i.test(ua) || touchMac || (window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
-  }
-  let currentQuality = isMobileDevice() ? 'normal' : 'hd';
+  let peer=null, role=null, roomCode=null, roomPass=null, roomLabel=null;
+  let hostId=null;
+  let localStream=null, myName=getUsername();
+  let myPeerId=null;
+  const remotePeers = new Map(); // peerId -> {name, call, conn, mic, videoEl, tileEl}
+  let statsInterval=null;
+  let chatUnread=0, peopleUnread=0;
+  let switching=false;
+  let filterMode='none';
+  let outgoingSenderTrackKind='camera'; // 'camera' | 'screen' | 'filtered'
+  let filterCanvasStream=null, filterRAF=null, filterModelReady=false, filterLoading=false;
+  let autoQuality='normal';
 
   const QUALITY_PRESETS = {
     hemat:  { width:{ideal:480},  height:{ideal:360}, frameRate:{ideal:20,max:24} },
-    normal: { width:{ideal:640},  height:{ideal:480}, frameRate:{ideal:24,max:30} },
+    normal: { width:{ideal:854},  height:{ideal:480}, frameRate:{ideal:26,max:30} },
     hd:     { width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:30,max:30} },
   };
-  const QUALITY_BITRATE = { hemat:250000, normal:700000, hd:1800000 };
-  const QUALITY_LABEL = { hemat:'Hemat Data', normal:'Normal', hd:'HD' };
+  const QUALITY_BITRATE = { hemat:250000, normal:750000, hd:1900000 };
+  const QUALITY_LABEL = { hemat:'Hemat', normal:'Normal', hd:'HD' };
+
+  function isMobileDevice(){
+    const ua = navigator.userAgent||'';
+    return /iPhone|iPad|iPod|Android/i.test(ua) || (window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
+  }
 
   // ============================================================
-  // UI HELPERS
+  // CREATE ROOM
   // ============================================================
-  function showScreen(name){
-    Object.values(screens).forEach(s => s.classList.remove('active'));
-    screens[name].classList.add('active');
-  }
-  function showEntryError(msg){ entryError.textContent = msg; entryError.hidden = false; }
-  function clearEntryError(){ entryError.hidden = true; entryError.textContent = ''; }
-  function resetJoinButton(){ btnJoin.disabled = false; btnJoin.textContent = 'Mulai / Gabung'; }
-
-  function sanitizeRoom(raw){
-    return raw.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-_]/g, '').slice(0, 60);
-  }
-
-  function setStatus(text, dotColor){
-    statusText.textContent = text;
-    if (dotColor) statusDot.style.background = dotColor;
-  }
-
-  function setQualityIconState(q){
-    document.querySelectorAll('.qbar').forEach((el, i) => {
-      const map = { hemat:1, normal:2, hd:3 };
-      el.classList.toggle('active', (i+1) <= map[q]);
-    });
-    btnQuality.setAttribute('aria-label', 'Kualitas video: ' + QUALITY_LABEL[q]);
-  }
-  function setQualityRowUI(q){
-    qualityRow.querySelectorAll('.quality-opt').forEach(b => b.classList.toggle('active', b.dataset.q === q));
-  }
-  setQualityRowUI(currentQuality);
-  setQualityIconState(currentQuality);
-
-  qualityRow.querySelectorAll('.quality-opt').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentQuality = btn.dataset.q;
-      setQualityRowUI(currentQuality);
-      setQualityIconState(currentQuality);
-    });
+  $('btn-create-room').addEventListener('click', async ()=>{
+    $('lobby-error').hidden = true;
+    const label = $('room-label').value.trim().slice(0,30);
+    let pass = sanitizeCode($('room-pass').value) || randDigits(4);
+    const code = randDigits(6);
+    saveMyRoom({ code, pass, label, isHost:true });
+    await startHostFlow(code, pass, label);
   });
 
-  // ============================================================
-  // MASUK / GABUNG
-  // ============================================================
-  btnJoin.addEventListener('click', async () => {
-    clearEntryError();
-    const room = sanitizeRoom(secretInput.value);
-    if (!room){ showEntryError('Kata rahasia nggak boleh kosong ya.'); return; }
+  async function startHostFlow(code, pass, label){
+    roomCode = code; roomPass = pass; roomLabel = label;
+    $('btn-create-room').disabled = true;
+    try{ await ensureLocalStream(); }catch(e){ $('lobby-error').textContent='Nggak bisa akses kamera/mic. Cek izin browser & pastikan situs pakai HTTPS.'; $('lobby-error').hidden=false; $('btn-create-room').disabled=false; return; }
+    $('btn-create-room').disabled = false;
 
-    btnJoin.disabled = true;
-    btnJoin.textContent = 'Menyiapkan kamera...';
+    $('waiting-title').textContent = 'Room siap!';
+    $('waiting-sub').textContent = 'Bagikan kode & kata sandi ini ke orang yang kamu undang. Kamu bisa masuk kapan saja.';
+    $('code-box').style.display='flex';
+    $('show-room-code').textContent = code;
+    $('show-room-pass').textContent = pass;
+    $('invite-link-card').style.display='block';
+    const link = location.origin + location.pathname + '?room=' + code;
+    $('invite-link').value = link;
+    $('local-preview-waiting').srcObject = localStream;
+    showScreen('waiting');
 
-    try{
-      const constraints = {
-        audio: true,
-        video: Object.assign({ facingMode:{ ideal: currentFacingMode } }, QUALITY_PRESETS[currentQuality]),
-      };
-      localStream = await navigator.mediaDevices.getUserMedia(constraints);
-    }catch(err){
-      resetJoinButton();
-      showEntryError('Nggak bisa akses kamera/mic. Pastikan izin browser sudah diizinkan, dan situs ini dibuka lewat HTTPS.');
-      return;
-    }
+    hostId = 'kwc' + code + 'h';
+    role = 'host';
+    openHostPeer();
+  }
 
-    localVideo.srcObject = localStream;
-    localPreviewWaiting.srcObject = localStream;
-    btnJoin.textContent = 'Menyambungkan...';
-    currentRoom = room;
-    waitingRoomLabel.textContent = secretInput.value.trim();
-
-    connectAsHost(room, false);
-  });
-
-  function connectAsHost(room, isReconnect){
-    const hostId = room + '-1';
-    const guestId = room + '-2';
-    const p = new Peer(hostId, { debug: 0, config: ICE_CONFIG });
-
-    p.on('open', () => {
-      peer = p; role = 'host'; hostIdGlobal = hostId;
-      if (!isReconnect) showScreen('waiting');
-      resetJoinButton();
-
-      peer.on('call', incomingCall => {
-        incomingCall.answer(localStream);
-        bindCallEvents(incomingCall);
-      });
-      peer.on('connection', conn => {
-        dataConn = conn;
-        bindDataConnEvents(conn);
+  function openHostPeer(){
+    if (peer) return;
+    const p = new Peer(hostId, { debug:0, config: ICE_CONFIG });
+    p.on('open', id => { peer=p; myPeerId=id; });
+    p.on('connection', conn => {
+      conn.on('open', ()=>{
+        conn.once('data', data => handleJoinRequest(conn, data));
       });
     });
-
+    p.on('call', call => {
+      // only answer calls from peers already verified in remotePeers, or defer briefly
+      answerIncomingCall(call);
+    });
     p.on('error', err => {
       if (err.type === 'unavailable-id'){
-        try{ p.destroy(); }catch(e){}
-        connectAsGuest(room, hostId, guestId, isReconnect);
-      } else if (isReconnect){
-        scheduleReconnectRetry(room);
+        toast('Room dengan kode ini sedang aktif di tab lain.');
       } else {
-        resetJoinButton();
-        showEntryError('Gagal terhubung (' + err.type + '). Coba lagi sebentar.');
+        toast('Masalah jaringan: ' + err.type);
       }
     });
   }
 
-  function connectAsGuest(room, hostId, guestId, isReconnect){
-    const p = new Peer(guestId, { debug: 0, config: ICE_CONFIG });
-
-    p.on('open', () => {
-      peer = p; role = 'guest'; hostIdGlobal = hostId;
-      if (!isReconnect) showScreen('waiting');
-      resetJoinButton();
-
-      const call = peer.call(hostId, localStream);
-      bindCallEvents(call);
-
-      const conn = peer.connect(hostId);
-      dataConn = conn;
-      bindDataConnEvents(conn);
-    });
-
-    p.on('error', err => {
-      if (isReconnect){
-        scheduleReconnectRetry(room);
-      } else {
-        resetJoinButton();
-        showEntryError('Gagal terhubung (' + err.type + '). Coba lagi sebentar.');
-      }
-    });
-  }
-
-  // ============================================================
-  // CALL EVENTS + AUTO-RECONNECT
-  // ============================================================
-  function bindCallEvents(call){
-    currentCall = call;
-
-    call.on('stream', remoteStream => {
-      if (call !== currentCall) return;
-      attachRemoteStream(remoteStream);
-      showScreen('call');
-      reconnectAttempts = 0;
-      setStatus('Tersambung', 'var(--good)');
-      monitorConnection(call);
-      startStatsMonitor(call);
-    });
-
-    call.on('close', () => {
-      if (call !== currentCall) return;
-      endCall('Pasangan kamu mengakhiri panggilan.');
-    });
-
-    call.on('error', () => {
-      if (call !== currentCall) return;
-      attemptReconnect();
-    });
-  }
-
-  function attachRemoteStream(remoteStream){
-    remoteVideo.srcObject = remoteStream;
-    const playPromise = remoteVideo.play();
-    if (playPromise && playPromise.catch){
-      playPromise.catch(() => { tapOverlay.classList.add('show'); });
-    }
-  }
-  tapOverlay.addEventListener('click', () => {
-    remoteVideo.play().then(() => tapOverlay.classList.remove('show')).catch(()=>{});
-  });
-
-  function monitorConnection(call){
-    if (!call.peerConnection) return;
-    call.peerConnection.oniceconnectionstatechange = () => {
-      if (call !== currentCall) return;
-      const state = call.peerConnection.iceConnectionState;
-      if (state === 'disconnected'){
-        setStatus('Koneksi goyang...', 'var(--warn)');
-        clearTimeout(reconnectTimer);
-        reconnectTimer = setTimeout(() => {
-          if (call !== currentCall) return;
-          if (call.peerConnection.iceConnectionState === 'disconnected'){
-            attemptReconnect();
-          }
-        }, 4000);
-      } else if (state === 'failed'){
-        attemptReconnect();
-      } else if (state === 'connected' || state === 'completed'){
-        reconnectAttempts = 0;
-      }
-    };
-  }
-
-  function attemptReconnect(){
-    if (!currentRoom) return;
-    if (reconnectAttempts >= MAX_RECONNECT){
-      endCall('Koneksi terputus dan gagal tersambung ulang. Coba mulai lagi ya.');
+  function handleJoinRequest(conn, data){
+    let msg; try{ msg = JSON.parse(data); }catch(e){ msg=null; }
+    if (!msg || msg.t !== 'join'){ conn.close(); return; }
+    if (String(msg.pass) !== String(roomPass)){
+      conn.send(JSON.stringify({ t:'join-denied', reason:'Kata sandi salah.' }));
+      setTimeout(()=>conn.close(), 300);
       return;
     }
-    reconnectAttempts++;
-    setStatus('Menyambung ulang... (' + reconnectAttempts + '/' + MAX_RECONNECT + ')', 'var(--warn)');
-    teardownPeerOnly();
-    setTimeout(() => { connectAsHost(currentRoom, true); }, 1200 * reconnectAttempts);
+    // accept
+    const guestId = conn.peer;
+    remotePeers.set(guestId, { name: msg.name || 'Tamu', conn, call:null, mic:true, videoEl:null, tileEl:null });
+    bindDataConnEvents(conn, guestId);
+    const roster = buildRoster();
+    conn.send(JSON.stringify({ t:'join-accepted', roomCode, roomLabel, host:hostId, roster }));
+    broadcastRoster();
+    broadcastSystemChat((msg.name||'Tamu') + ' bergabung ke room.');
+    if (screens.call.classList.contains('active')){ addOrUpdateTile(guestId, msg.name||'Tamu'); callGuestFromHost(guestId); }
   }
 
-  function scheduleReconnectRetry(room){
-    if (reconnectAttempts >= MAX_RECONNECT){
-      endCall('Koneksi terputus dan gagal tersambung ulang. Coba mulai lagi ya.');
+  function callGuestFromHost(guestId){
+    if (!localStream) return;
+    const call = peer.call(guestId, currentOutgoingStream());
+    const entry = remotePeers.get(guestId);
+    if (entry) entry.call = call;
+    bindMediaCallEvents(call, guestId);
+  }
+
+  function answerIncomingCall(call){
+    const from = call.peer;
+    call.answer(currentOutgoingStream());
+    const entry = remotePeers.get(from);
+    if (entry) entry.call = call;
+    bindMediaCallEvents(call, from);
+  }
+
+  function buildRoster(){
+    const roster = { [hostId]: { name: myName } };
+    remotePeers.forEach((v,k)=>{ roster[k] = { name: v.name }; });
+    return roster;
+  }
+
+  function broadcastRoster(){
+    const roster = buildRoster();
+    remotePeers.forEach(v=>{ if (v.conn && v.conn.open) v.conn.send(JSON.stringify({ t:'roster', roster })); });
+  }
+
+  // ============================================================
+  // JOIN ROOM (guest)
+  // ============================================================
+  $('btn-join-room').addEventListener('click', async ()=>{
+    $('lobby-error').hidden = true;
+    const code = sanitizeCode($('join-code').value);
+    const pass = sanitizeCode($('join-pass').value);
+    if (!code || !pass){ $('lobby-error').textContent='Isi kode room & kata sandi.'; $('lobby-error').hidden=false; return; }
+    if (!myName){ showScreen('name'); return; }
+    $('btn-join-room').disabled = true;
+    try{ await ensureLocalStream(); }catch(e){ $('lobby-error').textContent='Nggak bisa akses kamera/mic. Cek izin browser.'; $('lobby-error').hidden=false; $('btn-join-room').disabled=false; return; }
+    $('btn-join-room').disabled = false;
+
+    roomCode = code; roomPass = pass; role='guest'; hostId = 'kwc'+code+'h';
+    $('waiting-title').textContent = 'Menghubungkan...';
+    $('waiting-sub').textContent = 'Memverifikasi kata sandi room.';
+    $('code-box').style.display='none';
+    $('invite-link-card').style.display='none';
+    $('local-preview-waiting').srcObject = localStream;
+    $('btn-enter-call').style.display='none';
+    showScreen('waiting');
+
+    const guestId = 'kwc'+code+'g'+Math.random().toString(36).slice(2,8);
+    const p = new Peer(guestId, { debug:0, config: ICE_CONFIG });
+    p.on('open', id => {
+      peer=p; myPeerId=id; role='guest';
+      const conn = p.connect(hostId, { reliable:true });
+      conn.on('open', ()=>{
+        conn.send(JSON.stringify({ t:'join', name: myName, pass: roomPass }));
+      });
+      conn.on('data', data => handleGuestData(conn, data));
+      conn.on('error', ()=>{ $('lobby-error').textContent='Room tidak ditemukan / host sedang offline.'; showScreen('lobby'); $('lobby-error').hidden=false; });
+      remotePeers.set(hostId, { name:'Host', conn, call:null, mic:true, videoEl:null, tileEl:null });
+    });
+    p.on('call', call => answerIncomingCall(call));
+    p.on('error', err => { toast('Masalah jaringan: '+err.type); showScreen('lobby'); });
+  });
+
+  function handleGuestData(conn, data){
+    let msg; try{ msg = JSON.parse(data); }catch(e){ return; }
+    if (msg.t === 'join-denied'){
+      toast(msg.reason || 'Gagal gabung.');
+      showScreen('lobby'); teardownPeerOnly();
       return;
     }
-    setTimeout(() => { connectAsHost(room, true); }, 1500);
+    if (msg.t === 'join-accepted'){
+      roomLabel = msg.roomLabel;
+      saveMyRoom({ code: roomCode, pass: roomPass, label: roomLabel, isHost:false });
+      $('waiting-title').textContent = 'Berhasil terhubung!';
+      $('waiting-sub').textContent = 'Kamu terhubung ke room "' + (roomLabel || roomCode) + '". Masuk kapan kamu siap.';
+      $('btn-enter-call').style.display='block';
+      updateRosterFromMsg(msg.roster);
+      // call host for media
+      const call = peer.call(hostId, currentOutgoingStream());
+      const entry = remotePeers.get(hostId); if (entry) entry.call = call;
+      bindMediaCallEvents(call, hostId);
+      return;
+    }
+    if (msg.t === 'roster'){ updateRosterFromMsg(msg.roster); return; }
+    if (msg.t === 'chat'){ handleIncomingChat(msg); return; }
+    if (msg.t === 'sys'){ appendChatMessage('sys', msg.text); return; }
+    if (msg.t === 'mic-state'){ updateMicIndicator(conn.peer, msg.mic); return; }
+  }
+
+  function updateRosterFromMsg(roster){
+    if (!roster) return;
+    Object.keys(roster).forEach(pid=>{
+      if (pid === myPeerId) return;
+      if (!remotePeers.has(pid)) remotePeers.set(pid, { name: roster[pid].name, conn:null, call:null, mic:true, videoEl:null, tileEl:null });
+      else remotePeers.get(pid).name = roster[pid].name;
+      if (screens.call.classList.contains('active')) addOrUpdateTile(pid, roster[pid].name);
+      // mesh: connect directly to peers with lexicographically smaller id than ours, to avoid double dial
+      if (pid !== hostId && role==='guest' && !remotePeers.get(pid).call){
+        if (myPeerId < pid){ dialMeshPeer(pid); }
+      }
+    });
+    renderParticipants();
+  }
+
+  function dialMeshPeer(pid){
+    const call = peer.call(pid, currentOutgoingStream());
+    const entry = remotePeers.get(pid); if (entry) entry.call = call;
+    bindMediaCallEvents(call, pid);
+    const conn = peer.connect(pid, { reliable:true });
+    conn.on('open', ()=>{ if (remotePeers.has(pid)) remotePeers.get(pid).conn = conn; });
+    bindDataConnEvents(conn, pid);
   }
 
   // ============================================================
-  // KONEKSI: kualitas jaringan (Baik / Sedang / Lemah)
+  // MEDIA CALL / DATA CONN BINDINGS
   // ============================================================
-  function startStatsMonitor(call){
-    stopStatsMonitor();
-    statsInterval = setInterval(async () => {
-      if (!call.peerConnection || call !== currentCall) return;
-      try{
-        const stats = await call.peerConnection.getStats();
-        let rtt = null, lost = 0, received = 0;
-        stats.forEach(report => {
-          if (report.type === 'candidate-pair' && report.state === 'succeeded' && report.currentRoundTripTime != null){
-            rtt = report.currentRoundTripTime;
-          }
-          if (report.type === 'inbound-rtp' && report.kind === 'video'){
-            lost = report.packetsLost || 0;
-            received = report.packetsReceived || 0;
-          }
-        });
-        if (reconnectAttempts === 0){
-          let label = 'Baik', color = 'var(--good)';
-          const lossRatio = received > 0 ? lost / (lost + received) : 0;
-          if (rtt !== null && (rtt > 0.3 || lossRatio > 0.08)){ label = 'Lemah'; color = 'var(--danger)'; }
-          else if (rtt !== null && (rtt > 0.15 || lossRatio > 0.03)){ label = 'Sedang'; color = 'var(--warn)'; }
-          setStatus('Tersambung · ' + label, color);
-        }
-      }catch(e){ /* abaikan, tidak kritis */ }
-    }, 3000);
+  function bindMediaCallEvents(call, pid){
+    call.on('stream', stream => {
+      addOrUpdateTile(pid, (remotePeers.get(pid)||{}).name || 'Tamu', stream);
+      reconnectAttemptsReset();
+      startStatsMonitorOnce();
+    });
+    call.on('close', ()=> removePeer(pid, 'meninggalkan room'));
+    call.on('error', ()=> removePeer(pid, 'koneksi terputus'));
   }
-  function stopStatsMonitor(){ if (statsInterval){ clearInterval(statsInterval); statsInterval = null; } }
+  function bindDataConnEvents(conn, pid){
+    conn.on('data', data => {
+      let msg; try{ msg = JSON.parse(data); }catch(e){ return; }
+      if (msg.t === 'chat'){ handleIncomingChat(msg); if (role==='host') relayChatToOthers(msg, pid); }
+      else if (msg.t === 'sys'){ appendChatMessage('sys', msg.text); if (role==='host') relaySysToOthers(msg); }
+      else if (msg.t === 'mic-state'){ updateMicIndicator(pid, msg.mic); }
+      else if (msg.t === 'join' && role==='host'){ handleJoinRequest(conn, data); }
+    });
+    conn.on('close', ()=> removePeer(pid, 'meninggalkan room'));
+  }
+
+  function removePeer(pid, reasonLabel){
+    const entry = remotePeers.get(pid);
+    if (!entry) return;
+    remotePeers.delete(pid);
+    const tile = document.getElementById('tile-'+pid);
+    if (tile) tile.remove();
+    renderParticipants();
+    if (reasonLabel) appendChatMessage('sys', (entry.name||'Seseorang') + ' ' + reasonLabel + '.');
+    if (role==='host') broadcastRoster();
+    updateStageLayout();
+  }
+
+  function reconnectAttemptsReset(){ /* placeholder for future backoff tuning */ }
 
   // ============================================================
-  // KONTROL: mic / kamera / ganti kamera / kualitas / akhiri
+  // LOCAL STREAM / OUTGOING TRACK MANAGEMENT
   // ============================================================
-  btnMic.addEventListener('click', () => {
-    if (!localStream) return;
-    const track = localStream.getAudioTracks()[0];
-    if (!track) return;
-    track.enabled = !track.enabled;
-    btnMic.classList.toggle('off', !track.enabled);
+  async function ensureLocalStream(){
+    if (localStream) return localStream;
+    const constraints = { audio:true, video: Object.assign({ facingMode:{ideal:'user'} }, QUALITY_PRESETS[isMobileDevice()?'normal':'hd']) };
+    localStream = await navigator.mediaDevices.getUserMedia(constraints);
+    return localStream;
+  }
+
+  function currentOutgoingStream(){
+    if (outgoingSenderTrackKind === 'filtered' && filterCanvasStream) return filterCanvasStream;
+    return localStream;
+  }
+
+  function replaceOutgoingTrackEverywhere(newVideoTrack){
+    remotePeers.forEach(entry=>{
+      if (entry.call && entry.call.peerConnection){
+        const sender = entry.call.peerConnection.getSenders().find(s=>s.track && s.track.kind==='video');
+        if (sender) sender.replaceTrack(newVideoTrack).catch(()=>{});
+      }
+    });
+  }
+
+  // ============================================================
+  // CALL SCREEN ENTRY
+  // ============================================================
+  $('btn-enter-call').addEventListener('click', ()=>{
+    showScreen('call');
+    buildLocalTile();
+    remotePeers.forEach((v,k)=>{ if (v.name) addOrUpdateTile(k, v.name); });
+    updateStageLayout();
+    startAntiCapture();
+    startAutoQualityLoop();
   });
 
-  btnCam.addEventListener('click', () => {
+  function buildLocalTile(){
+    let tile = document.getElementById('tile-local');
+    if (tile) return;
+    tile = document.createElement('div');
+    tile.className = 'tile mirrored';
+    tile.id = 'tile-local';
+    tile.innerHTML = `<video id="local-video" autoplay muted playsinline></video><span class="you-badge">Kamu</span><div class="tag"><span class="micoff"></span><span id="local-tag-name">${escapeHtml(myName)}</span></div>`;
+    $('stage').appendChild(tile);
+    $('local-video').srcObject = localStream;
+  }
+
+  function addOrUpdateTile(pid, name, stream){
+    let tile = document.getElementById('tile-'+pid);
+    if (!tile){
+      tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.id = 'tile-'+pid;
+      const initial = (name||'?').trim().charAt(0).toUpperCase();
+      tile.innerHTML = `<video autoplay playsinline></video><div class="avatar-fallback"><span class="circle">${initial}</span></div><div class="tag"><span class="micoff"></span><span class="tag-name">${escapeHtml(name||'Tamu')}</span></div>`;
+      $('stage').appendChild(tile);
+      updateStageLayout();
+    } else {
+      const nm = tile.querySelector('.tag-name'); if (nm) nm.textContent = name||'Tamu';
+    }
+    if (stream){
+      const v = tile.querySelector('video');
+      v.srcObject = stream;
+      v.play().catch(()=>{});
+      tile.querySelector('.avatar-fallback').style.display='none';
+    }
+    const entry = remotePeers.get(pid); if (entry) entry.tileEl = tile;
+    renderParticipants();
+  }
+
+  function updateStageLayout(){
+    const stage = $('stage');
+    const n = stage.children.length || 1;
+    let cols = 1;
+    if (n>=2) cols=2; if (n>=5) cols=3; if (n>=10) cols=4;
+    const rows = Math.ceil(n/cols);
+    stage.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    stage.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+  }
+
+  // ============================================================
+  // MIC INDICATOR
+  // ============================================================
+  function updateMicIndicator(pid, micOn){
+    const entry = remotePeers.get(pid);
+    if (entry) entry.mic = micOn;
+    const tile = document.getElementById('tile-'+pid);
+    if (tile) tile.classList.toggle('mic-off', !micOn);
+  }
+  function broadcastMicState(){
+    const on = localStream && localStream.getAudioTracks()[0] ? localStream.getAudioTracks()[0].enabled : true;
+    remotePeers.forEach(v=>{ if (v.conn && v.conn.open) v.conn.send(JSON.stringify({ t:'mic-state', mic:on })); });
+    $('tile-local').classList.toggle('mic-off', !on);
+  }
+
+  // ============================================================
+  // CONTROLS
+  // ============================================================
+  $('btn-mic').addEventListener('click', ()=>{
     if (!localStream) return;
-    const track = localStream.getVideoTracks()[0];
-    if (!track) return;
+    const track = localStream.getAudioTracks()[0]; if (!track) return;
     track.enabled = !track.enabled;
-    btnCam.classList.toggle('off', !track.enabled);
+    $('btn-mic').classList.toggle('off', !track.enabled);
+    broadcastMicState();
+  });
+  $('btn-cam').addEventListener('click', ()=>{
+    if (!localStream) return;
+    const track = localStream.getVideoTracks()[0]; if (!track) return;
+    track.enabled = !track.enabled;
+    $('btn-cam').classList.toggle('off', !track.enabled);
   });
 
-  btnSwitchCam.addEventListener('click', async () => {
-    if (!localStream) return;
-    btnSwitchCam.disabled = true;
-    const nextFacing = currentFacingMode === 'user' ? 'environment' : 'user';
+  let currentFacingMode='user';
+  $('btn-switch-cam').addEventListener('click', async ()=>{
+    if (!localStream || switching) return;
+    switching = true; $('btn-switch-cam').disabled = true;
+    const nextFacing = currentFacingMode==='user' ? 'environment' : 'user';
     try{
-      const constraints = Object.assign({ facingMode:{ ideal: nextFacing } }, QUALITY_PRESETS[currentQuality]);
-      const newStream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio:false });
+      const constraints = Object.assign({ facingMode:{ideal:nextFacing} }, QUALITY_PRESETS[autoQuality]);
+      const newStream = await navigator.mediaDevices.getUserMedia({ video:constraints, audio:false });
       const newTrack = newStream.getVideoTracks()[0];
       const oldTrack = localStream.getVideoTracks()[0];
       newTrack.enabled = oldTrack ? oldTrack.enabled : true;
-
-      if (currentCall && currentCall.peerConnection){
-        const sender = currentCall.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-        if (sender) await sender.replaceTrack(newTrack);
-      }
+      if (outgoingSenderTrackKind==='camera') replaceOutgoingTrackEverywhere(newTrack);
       if (oldTrack){ localStream.removeTrack(oldTrack); oldTrack.stop(); }
       localStream.addTrack(newTrack);
+      $('local-video').srcObject = localStream;
       currentFacingMode = nextFacing;
-      applyBitrate(currentCall, currentQuality);
-    }catch(e){ /* kamera lain mungkin tidak tersedia, biarkan kamera sekarang aktif */ }
-    finally{ btnSwitchCam.disabled = false; }
+      document.getElementById('tile-local').classList.toggle('mirrored', nextFacing==='user');
+    }catch(e){ toast('Kamera lain tidak tersedia.'); }
+    finally{ switching=false; $('btn-switch-cam').disabled=false; }
   });
 
-  btnQuality.addEventListener('click', () => {
-    const order = ['hemat', 'normal', 'hd'];
-    const idx = (order.indexOf(currentQuality) + 1) % order.length;
-    applyQualityMidCall(order[idx]);
-  });
-
-  function applyQualityMidCall(q){
-    currentQuality = q;
-    setQualityIconState(q);
-    setQualityRowUI(q);
-    const track = localStream && localStream.getVideoTracks()[0];
-    if (track && track.applyConstraints){
-      track.applyConstraints(QUALITY_PRESETS[q]).catch(()=>{});
-    }
-    applyBitrate(currentCall, q);
-  }
-
-  function applyBitrate(call, quality){
-    if (!call || !call.peerConnection) return;
-    const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-    if (!sender) return;
+  // screen share
+  let screenStream=null;
+  $('btn-screenshare').addEventListener('click', async ()=>{
+    if (outgoingSenderTrackKind==='screen'){ await stopScreenShare(); return; }
     try{
-      const params = sender.getParameters();
-      if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
-      params.encodings[0].maxBitrate = QUALITY_BITRATE[quality];
-      sender.setParameters(params).catch(()=>{});
-    }catch(e){ /* browser lama mungkin tidak dukung, aman diabaikan */ }
+      screenStream = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:{ideal:24} }, audio:false });
+      const screenTrack = screenStream.getVideoTracks()[0];
+      screenTrack.onended = ()=> stopScreenShare();
+      replaceOutgoingTrackEverywhere(screenTrack);
+      outgoingSenderTrackKind='screen';
+      $('btn-screenshare').classList.add('on-accent');
+      $('local-video').srcObject = screenStream;
+      document.getElementById('tile-local').classList.remove('mirrored');
+      broadcastSystemChat(myName + ' membagikan layar.');
+      toast('Membagikan layar...');
+    }catch(e){ /* user membatalkan pemilihan layar */ }
+  });
+  async function stopScreenShare(){
+    if (screenStream){ screenStream.getTracks().forEach(t=>t.stop()); screenStream=null; }
+    outgoingSenderTrackKind = filterMode==='batman' ? 'filtered' : 'camera';
+    const track = outgoingSenderTrackKind==='filtered' && filterCanvasStream ? filterCanvasStream.getVideoTracks()[0] : localStream.getVideoTracks()[0];
+    replaceOutgoingTrackEverywhere(track);
+    $('btn-screenshare').classList.remove('on-accent');
+    $('local-video').srcObject = outgoingSenderTrackKind==='filtered' ? filterCanvasStream : localStream;
+    document.getElementById('tile-local').classList.toggle('mirrored', outgoingSenderTrackKind!=='filtered');
   }
 
-  btnCancelWait.addEventListener('click', () => { cleanupConnection(); showScreen('entry'); });
-  btnEnd.addEventListener('click', () => endCall());
+  $('btn-end').addEventListener('click', ()=> endCall());
+  $('btn-cancel-wait').addEventListener('click', ()=>{ cleanupConnection(); showScreen('lobby'); });
+  $('btn-copy-link').addEventListener('click', ()=>{
+    $('invite-link').select();
+    navigator.clipboard && navigator.clipboard.writeText($('invite-link').value).then(()=>toast('Tautan disalin!')).catch(()=>{});
+  });
 
   // ============================================================
-  // CHAT (data channel)
+  // PARTICIPANTS PANEL
   // ============================================================
-  function bindDataConnEvents(conn){
-    conn.on('data', data => {
-      appendChatMessage('them', String(data));
-      if (!chatPanel.classList.contains('open')){
-        chatUnread++;
-        chatBadge.classList.add('show');
-      }
+  const peoplePanel = $('people-panel');
+  $('btn-people-toggle').addEventListener('click', ()=>{
+    closePanel(chatPanel); chatUnreadReset();
+    peoplePanel.classList.toggle('open');
+    if (peoplePanel.classList.contains('open')){ peopleUnread=0; $('people-badge').classList.remove('show'); renderParticipants(); }
+  });
+  $('btn-people-close').addEventListener('click', ()=> peoplePanel.classList.remove('open'));
+
+  function renderParticipants(){
+    const el = $('plist');
+    const rows = [`<div class="prow"><span class="circle">${(myName||'?').charAt(0).toUpperCase()}</span><div><div class="nm">${escapeHtml(myName)}</div><div class="role">Kamu ${role==='host'?'· Host':''}</div></div></div>`];
+    remotePeers.forEach((v,k)=>{
+      rows.push(`<div class="prow"><span class="circle">${(v.name||'?').charAt(0).toUpperCase()}</span><div><div class="nm">${escapeHtml(v.name||'Tamu')}</div><div class="role">${k===hostId?'Host':'Peserta'}${v.mic===false?' · mic mati':''}</div></div></div>`);
     });
-    conn.on('close', () => { if (dataConn === conn) dataConn = null; });
+    el.innerHTML = rows.join('');
+    $('room-info-foot').textContent = roomCode ? ('Kode room: '+roomCode+(roomLabel?(' · '+roomLabel):'')) : '';
   }
 
-  function appendChatMessage(who, text){
+  // ============================================================
+  // CHAT
+  // ============================================================
+  const chatPanel = $('chat-panel');
+  function closePanel(p){ p.classList.remove('open'); }
+  function chatUnreadReset(){ chatUnread=0; $('chat-badge').classList.remove('show'); }
+
+  $('btn-chat-toggle').addEventListener('click', ()=>{
+    closePanel(peoplePanel);
+    chatPanel.classList.toggle('open');
+    if (chatPanel.classList.contains('open')) chatUnreadReset();
+  });
+  $('btn-chat-close').addEventListener('click', ()=> closePanel(chatPanel));
+
+  function appendChatMessage(kind, text, who){
     const div = document.createElement('div');
-    div.className = 'chat-msg ' + who;
-    div.textContent = text; // textContent, bukan innerHTML -> aman dari injeksi
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    div.className = 'chat-msg ' + kind;
+    if (kind !== 'sys' && who) div.innerHTML = `<span class="who">${escapeHtml(who)}</span>${escapeHtml(text)}`;
+    else div.textContent = text;
+    $('chat-messages').appendChild(div);
+    $('chat-messages').scrollTop = $('chat-messages').scrollHeight;
+    if (kind==='them' && !chatPanel.classList.contains('open')){ chatUnread++; $('chat-badge').classList.add('show'); }
   }
 
   function sendChatMessage(){
-    const text = chatInput.value.trim();
+    const text = $('chat-input').value.trim();
     if (!text) return;
-    if (dataConn && dataConn.open){
-      dataConn.send(text);
-      appendChatMessage('me', text);
-      chatInput.value = '';
-    }
+    const msg = { t:'chat', name:myName, text };
+    appendChatMessage('me', text, myName);
+    $('chat-input').value='';
+    if (role==='host'){ remotePeers.forEach(v=>{ if (v.conn && v.conn.open) v.conn.send(JSON.stringify(msg)); }); }
+    else { const hostEntry = remotePeers.get(hostId); if (hostEntry && hostEntry.conn && hostEntry.conn.open) hostEntry.conn.send(JSON.stringify(msg)); }
   }
-  btnChatSend.addEventListener('click', sendChatMessage);
-  chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
+  $('btn-chat-send').addEventListener('click', sendChatMessage);
+  $('chat-input').addEventListener('keydown', e=>{ if (e.key==='Enter') sendChatMessage(); });
 
-  btnChatToggle.addEventListener('click', () => {
-    chatPanel.classList.toggle('open');
-    if (chatPanel.classList.contains('open')){
-      chatUnread = 0;
-      chatBadge.classList.remove('show');
-    }
-  });
-  btnChatClose.addEventListener('click', () => chatPanel.classList.remove('open'));
+  function handleIncomingChat(msg){ appendChatMessage('them', msg.text, msg.name); }
+  function relayChatToOthers(msg, exceptPid){
+    remotePeers.forEach((v,k)=>{ if (k!==exceptPid && v.conn && v.conn.open) v.conn.send(JSON.stringify(msg)); });
+  }
+  function relaySysToOthers(msg){
+    remotePeers.forEach(v=>{ if (v.conn && v.conn.open) v.conn.send(JSON.stringify(msg)); });
+  }
+  function broadcastSystemChat(text){
+    appendChatMessage('sys', text);
+    const msg = { t:'sys', text };
+    remotePeers.forEach(v=>{ if (v.conn && v.conn.open) v.conn.send(JSON.stringify(msg)); });
+  }
 
   // ============================================================
-  // BERSIH-BERSIH
+  // AUTO QUALITY (deteksi jaringan otomatis, tanpa pilihan manual)
+  // ============================================================
+  function startAutoQualityLoop(){
+    stopStatsMonitor();
+    let goodStreak=0, badStreak=0;
+    statsInterval = setInterval(async ()=>{
+      let rtt=null, lossRatio=0, sampleCount=0;
+      const calls = [...remotePeers.values()].map(v=>v.call).filter(Boolean);
+      for (const call of calls){
+        if (!call.peerConnection) continue;
+        try{
+          const stats = await call.peerConnection.getStats();
+          stats.forEach(r=>{
+            if (r.type==='candidate-pair' && r.state==='succeeded' && r.currentRoundTripTime!=null){ rtt = rtt===null ? r.currentRoundTripTime : Math.max(rtt, r.currentRoundTripTime); }
+            if (r.type==='inbound-rtp' && r.kind==='video'){
+              const lost = r.packetsLost||0, recv=r.packetsReceived||0;
+              if (lost+recv>0){ lossRatio = Math.max(lossRatio, lost/(lost+recv)); sampleCount++; }
+            }
+          });
+        }catch(e){}
+      }
+      let label='Baik', color='var(--good)';
+      if (rtt!==null && (rtt>0.32 || lossRatio>0.09)){ label='Lemah'; color='var(--danger)'; badStreak++; goodStreak=0; }
+      else if (rtt!==null && (rtt>0.16 || lossRatio>0.035)){ label='Sedang'; color='var(--warn)'; badStreak=0; goodStreak=0; }
+      else { badStreak=0; goodStreak++; }
+
+      let target = autoQuality;
+      if (badStreak>=2 && autoQuality!=='hemat'){ target = autoQuality==='hd' ? 'normal' : 'hemat'; badStreak=0; }
+      else if (goodStreak>=4 && autoQuality!=='hd'){ target = autoQuality==='hemat' ? 'normal' : 'hd'; goodStreak=0; }
+      if (target !== autoQuality) applyAutoQuality(target);
+
+      setStatus('Tersambung · ' + label + ' · ' + QUALITY_LABEL[autoQuality] + ' otomatis', color);
+    }, 3000);
+  }
+  function stopStatsMonitor(){ if (statsInterval){ clearInterval(statsInterval); statsInterval=null; } }
+  function startStatsMonitorOnce(){ if (!statsInterval) startAutoQualityLoop(); }
+
+  function applyAutoQuality(q){
+    autoQuality = q;
+    if (localStream){
+      const track = localStream.getVideoTracks()[0];
+      if (track && track.applyConstraints) track.applyConstraints(QUALITY_PRESETS[q]).catch(()=>{});
+    }
+    remotePeers.forEach(entry=>{
+      if (entry.call && entry.call.peerConnection){
+        const sender = entry.call.peerConnection.getSenders().find(s=>s.track && s.track.kind==='video');
+        if (sender){
+          try{
+            const params = sender.getParameters();
+            if (!params.encodings || !params.encodings.length) params.encodings=[{}];
+            params.encodings[0].maxBitrate = QUALITY_BITRATE[q];
+            sender.setParameters(params).catch(()=>{});
+          }catch(e){}
+        }
+      }
+    });
+  }
+
+  function setStatus(text, color){ $('status-text').textContent=text; if (color) $('status-dot').style.background=color; }
+
+  // ============================================================
+  // FILTER — 🦇 BATMAN MASK (face-api.js tiny detector + canvas overlay)
+  // ============================================================
+  $('btn-filter').addEventListener('click', ()=>{
+    $('filter-strip').classList.toggle('show');
+  });
+  document.querySelectorAll('.filter-opt').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      document.querySelectorAll('.filter-opt').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const f = btn.dataset.f;
+      $('filter-strip').classList.remove('show');
+      if (f==='batman') await enableBatmanFilter();
+      else disableFilter();
+    });
+  });
+
+  let filterVideoEl=null, filterCanvasEl=null, filterCtx=null;
+  async function loadFaceModels(){
+    if (filterModelReady) return true;
+    if (filterLoading) return false;
+    filterLoading = true;
+    toast('Menyiapkan filter Batman...');
+    try{
+      const base = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+      await faceapi.nets.tinyFaceDetector.loadFromUri(base);
+      filterModelReady = true;
+      return true;
+    }catch(e){
+      toast('Gagal memuat filter (cek koneksi). Menampilkan masker statis.');
+      return false;
+    } finally { filterLoading = false; }
+  }
+
+  async function enableBatmanFilter(){
+    if (!localStream) return;
+    filterMode='batman';
+    $('btn-filter').classList.add('on-accent');
+    const ok = await loadFaceModels();
+
+    filterVideoEl = document.createElement('video');
+    filterVideoEl.muted = true; filterVideoEl.playsInline = true; filterVideoEl.srcObject = localStream;
+    await filterVideoEl.play().catch(()=>{});
+
+    const track = localStream.getVideoTracks()[0];
+    const settings = track.getSettings ? track.getSettings() : {};
+    const w = settings.width || 640, h = settings.height || 480;
+    filterCanvasEl = document.createElement('canvas');
+    filterCanvasEl.width = w; filterCanvasEl.height = h;
+    filterCtx = filterCanvasEl.getContext('2d');
+
+    filterCanvasStream = filterCanvasEl.captureStream(24);
+    const audioTrack = localStream.getAudioTracks()[0];
+    if (audioTrack) filterCanvasStream.addTrack(audioTrack);
+
+    outgoingSenderTrackKind = 'filtered';
+    replaceOutgoingTrackEverywhere(filterCanvasStream.getVideoTracks()[0]);
+    $('local-video').srcObject = filterCanvasStream;
+    document.getElementById('tile-local').classList.remove('mirrored');
+
+    runFilterLoop(ok);
+    broadcastSystemChat(myName + ' mengaktifkan filter Batman.');
+  }
+
+  function disableFilter(){
+    filterMode='none';
+    $('btn-filter').classList.remove('on-accent');
+    if (filterRAF) cancelAnimationFrame(filterRAF);
+    filterRAF=null;
+    if (filterCanvasStream){ filterCanvasStream.getVideoTracks().forEach(t=>t.stop()); filterCanvasStream=null; }
+    if (outgoingSenderTrackKind==='filtered'){
+      outgoingSenderTrackKind='camera';
+      replaceOutgoingTrackEverywhere(localStream.getVideoTracks()[0]);
+      $('local-video').srcObject = localStream;
+      document.getElementById('tile-local').classList.add('mirrored');
+    }
+  }
+
+  let lastDetection=null, detectCounter=0;
+  async function runFilterLoop(modelsOk){
+    if (filterMode!=='batman' || !filterVideoEl) return;
+    const w = filterCanvasEl.width, h = filterCanvasEl.height;
+    filterCtx.save();
+    filterCtx.translate(w,0); filterCtx.scale(-1,1); // mirror like a selfie
+    filterCtx.drawImage(filterVideoEl, 0,0,w,h);
+    filterCtx.restore();
+
+    if (modelsOk && filterModelReady){
+      detectCounter++;
+      if (detectCounter % 3 === 0){
+        try{
+          const det = await faceapi.detectSingleFace(filterVideoEl, new faceapi.TinyFaceDetectorOptions({ inputSize:224, scoreThreshold:0.45 }));
+          if (det) lastDetection = det.box;
+        }catch(e){}
+      }
+    }
+    drawBatmanMask(filterCtx, w, h, lastDetection);
+
+    filterRAF = requestAnimationFrame(()=>runFilterLoop(modelsOk));
+  }
+
+  function drawBatmanMask(ctx, w, h, box){
+    let cx, cy, size;
+    if (box){
+      // mirror box x because canvas is mirrored
+      cx = w - (box.x + box.width/2);
+      cy = box.y + box.height/2;
+      size = Math.max(box.width, box.height) * 1.35;
+    } else {
+      cx = w/2; cy = h*0.4; size = Math.min(w,h)*0.55;
+    }
+    const s = size/100;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.fillStyle = '#0a0a0f';
+    ctx.strokeStyle = 'rgba(139,92,246,.5)';
+    ctx.lineWidth = 2*s;
+    ctx.beginPath();
+    // ears
+    ctx.moveTo(-46*s,-18*s); ctx.lineTo(-30*s,-70*s); ctx.lineTo(-12*s,-24*s);
+    ctx.lineTo(12*s,-24*s); ctx.lineTo(30*s,-70*s); ctx.lineTo(46*s,-18*s);
+    // cowl outline down around face
+    ctx.quadraticCurveTo(52*s, 10*s, 34*s, 34*s);
+    ctx.quadraticCurveTo(18*s, 50*s, 0, 50*s);
+    ctx.quadraticCurveTo(-18*s, 50*s, -34*s, 34*s);
+    ctx.quadraticCurveTo(-52*s, 10*s, -46*s, -18*s);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // eye holes
+    ctx.fillStyle = '#e9d9ff';
+    ctx.beginPath();
+    ctx.ellipse(-16*s, 0, 12*s, 7*s, -0.25, 0, Math.PI*2);
+    ctx.ellipse(16*s, 0, 12*s, 7*s, 0.25, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ============================================================
+  // ANTI-CAPTURE DETERRENTS (lapisan pencegah, bukan blokir mutlak)
+  // ============================================================
+  function startAntiCapture(){
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('blur', onWindowBlur);
+    window.addEventListener('focus', onWindowFocus);
+    document.addEventListener('keyup', onKeyUpPrintScreen);
+  }
+  function stopAntiCapture(){
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    window.removeEventListener('blur', onWindowBlur);
+    window.removeEventListener('focus', onWindowFocus);
+    document.removeEventListener('keyup', onKeyUpPrintScreen);
+    $('privacy-shield').classList.remove('show');
+  }
+  function onVisibilityChange(){ if (document.hidden) showPrivacyShield(); else hidePrivacyShield(); }
+  function onWindowBlur(){ showPrivacyShield(); }
+  function onWindowFocus(){ hidePrivacyShield(); }
+  function onKeyUpPrintScreen(e){ if (e.key==='PrintScreen'){ showPrivacyShield(); navigator.clipboard && navigator.clipboard.writeText('').catch(()=>{}); setTimeout(hidePrivacyShield, 1800); } }
+  function showPrivacyShield(){ $('privacy-shield').classList.add('show'); }
+  function hidePrivacyShield(){ $('privacy-shield').classList.remove('show'); }
+
+  // ============================================================
+  // CLEANUP
   // ============================================================
   function teardownPeerOnly(){
-    const callRef = currentCall; currentCall = null;
-    if (callRef){ try{ callRef.close(); }catch(e){} }
-    const connRef = dataConn; dataConn = null;
-    if (connRef){ try{ connRef.close(); }catch(e){} }
-    const peerRef = peer; peer = null;
-    if (peerRef){ try{ peerRef.destroy(); }catch(e){} }
+    remotePeers.forEach(v=>{ try{ v.call && v.call.close(); }catch(e){} try{ v.conn && v.conn.close(); }catch(e){} });
+    remotePeers.clear();
+    if (peer){ try{ peer.destroy(); }catch(e){} peer=null; }
     stopStatsMonitor();
-    clearTimeout(reconnectTimer);
   }
-
   function cleanupConnection(){
     teardownPeerOnly();
-    if (localStream){ localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-    remoteVideo.srcObject = null;
-    localVideo.srcObject = null;
-    localPreviewWaiting.srcObject = null;
-    btnMic.classList.remove('off');
-    btnCam.classList.remove('off');
-    tapOverlay.classList.remove('show');
-    chatPanel.classList.remove('open');
-    chatMessages.innerHTML = '';
-    chatBadge.classList.remove('show');
-    chatUnread = 0;
-    reconnectAttempts = 0;
-    currentRoom = null;
-    role = null;
+    disableFilter();
+    if (screenStream){ screenStream.getTracks().forEach(t=>t.stop()); screenStream=null; }
+    if (localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
+    const stage = $('stage'); if (stage) stage.innerHTML='';
+    $('chat-messages').innerHTML='';
+    chatUnreadReset();
+    stopAntiCapture();
+    role=null; roomCode=null; roomPass=null; roomLabel=null; hostId=null; myPeerId=null;
+    outgoingSenderTrackKind='camera';
   }
-
-  function endCall(message){
+  function endCall(){
+    broadcastSystemChat && role && broadcastSystemChat(myName + ' mengakhiri panggilan.');
     cleanupConnection();
-    showScreen('entry');
-    if (message) showEntryError(message);
+    showScreen('lobby');
+    renderMyRooms();
   }
 
-  window.addEventListener('beforeunload', () => {
-    if (peer){ try{ peer.destroy(); }catch(e){} }
-  });
+  window.addEventListener('beforeunload', ()=>{ if (peer){ try{ peer.destroy(); }catch(e){} } });
+
+  // ============================================================
+  // BOOT
+  // ============================================================
+  (function boot(){
+    myName = getUsername();
+    if (myName){ $('username').value = myName; renderUserChip(); enterLobby(); }
+    else { showScreen('name'); }
+  })();
 })();
 </script>
 </body>
